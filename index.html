@@ -29,7 +29,7 @@
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                    <Non-Listworthy Extreme Demons
+                    Non-Listworthy Extreme Demons
                 </h1>
                 <p class="text-slate-400 mt-2 text-sm md:text-base">
                     <a href="https://docs.google.com/spreadsheets/d/1LZrrAxgA1XQbngwohoxjZmMUHvIuq49ee8TL4z-yQoE/edit?gid=0#gid=0" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet ↗</a>
@@ -46,7 +46,7 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
                 <select id="tier-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All Tiers</option>
+                    <option value="all">All Tiers</option>
                 </select>
             </div>
 
@@ -54,7 +54,7 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
                 <select id="skillset-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All Skillsets</option>
+                    <option value="all">All Skillsets</option>
                 </select>
             </div>
 
@@ -62,10 +62,10 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
                 <select id="length-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All Lengths</option>
-                    <option value="medium">Medium</option>
-                    <option value="long">Long</option>
-                    <option value="xl">XL</option>
+                    <option value="all">All Lengths</option>
+                    <option value="medium">Medium (&lt; 0:59)</option>
+                    <option value="long">Long (1:00 - 1:59)</option>
+                    <option value="xl">XL (&gt;= 2:00)</option>
                 </select>
             </div>
         </div>
@@ -141,13 +141,19 @@
             }
         });
 
-        // Helper to extract YouTube link from column A's hidden link / markdown / HTML anchor tags
+        // Robust extractor to catch hyperlinks hidden in Google Sheets CSV exports (e.g., HYPERLINK("url","label") or raw URLs)
         function extractYouTubeLinkFromCell(cellValue) {
             if (!cellValue) return '';
-            let match = cellValue.match(/(https?:\/\/[^\s"'<]+)/g);
+            let match = cellValue.match(/(https?:\/\/[^\s"'<()]+)/g);
             if (match) {
                 let found = match.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
                 if (found) return found;
+            }
+            // Check formula pattern like HYPERLINK("url","text")
+            let formulaMatch = cellValue.match(/HYPERLINK\s*\(\s*"([^"]+)"/i);
+            if (formulaMatch && formulaMatch[1]) {
+                let url = formulaMatch[1];
+                if (url.includes('youtube.com') || url.includes('youtu.be')) return url;
             }
             return '';
         }
@@ -191,15 +197,6 @@
                     if (nonEmpties.length >= 2) {
                         let ytLink = extractYouTubeLinkFromCell(rowStringArray[0]);
 
-                        // Map columns accurately based on actual row positioning:
-                        // Column A (Index 0): Icon/Showcase link
-                        // Column B (Index 1): Name
-                        // Column C (Index 2): Creator
-                        // Column D (Index 3): Length
-                        // Column E (Index 4): Skillsets
-                        // Column F (Index 5): Enjoyment rating (2-digit or numeric string)
-                        // Column G (Index 6): Level ID (long integer string, e.g. 767657)
-                        // Column H (Index 7): Level Info / Description
                         let levelObj = {
                             tier: currentTier,
                             name: rowStringArray[1] || nonEmpties[0] || 'Unknown Level',
@@ -207,8 +204,8 @@
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
                             enjoyment: rowStringArray[5] || 'N/A',
-                            levelId: rowStringArray[6] || '', 
-                            levelInfo: rowStringArray[7] || '',
+                            levelId: rowStringArray[6] || '', // Corrected order: Column G is Level ID
+                            levelInfo: rowStringArray[7] || '', // Corrected order: Column H is Level Info
                             showcase: ytLink,
                             fullRowData: rowStringArray
                         };
@@ -254,6 +251,19 @@
             });
         }
 
+        // Helper to convert mm:ss format string into total seconds for proper numeric filtering range comparison
+        function parseLengthToSeconds(lengthStr) {
+            if (!lengthStr) return 0;
+            let parts = lengthStr.trim().split(':');
+            if (parts.length === 2) {
+                let mins = parseInt(parts[0], 10) || 0;
+                let secs = parseInt(parts[1], 10) || 0;
+                return mins * 60 + secs;
+            }
+            let singleVal = parseFloat(lengthStr);
+            return isNaN(singleVal) ? 0 : singleVal;
+        }
+
         function applyFilters() {
             const tierVal = document.getElementById('tier-filter').value;
             const skillsetVal = document.getElementById('skillset-filter').value;
@@ -269,11 +279,22 @@
 
                 let matchedLevels = section.levels.filter(lvl => {
                     let matchesSkillset = (skillsetVal === 'all') || lvl.skillset.toLowerCase().includes(skillsetVal.toLowerCase());
+                    
                     let matchesLength = true;
                     if (lengthVal !== 'all') {
-                        let lLower = lvl.length.toLowerCase();
-                        matchesLength = lLower.includes(lengthVal.toLowerCase());
+                        let totalSecs = parseLengthToSeconds(lvl.length);
+                        if (lengthVal === 'medium') {
+                            // Medium: below 0:59 (< 59 seconds)
+                            matchesLength = totalSecs < 59;
+                        } else if (lengthVal === 'long') {
+                            // Long: between 1:00 and 1:59 (60 to 119 seconds)
+                            matchesLength = totalSecs >= 60 && totalSecs <= 119;
+                        } else if (lengthVal === 'xl') {
+                            // XL: above 2:00 (>= 120 seconds)
+                            matchesLength = totalSecs >= 120;
+                        }
                     }
+
                     return matchesSkillset && matchesLength;
                 });
 
@@ -314,7 +335,7 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // Clean structure for sidebar details including Enjoyment under column F and correct Level ID under column G
+            // Swapped Level ID and Level Info data fields correctly, and included Enjoyment & Showcase
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
@@ -395,10 +416,10 @@
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     
-                    // Grid card configuration ensuring strict alignment columns with compact spacing for Name
+                    // Card layout with grid configuration
                     tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 ${colorClass}`;
 
-                    // Left Column (Name + Creator): Spans 4 columns for close grouping
+                    // Left Column (Name + Creator)
                     let leftCol = document.createElement('div');
                     leftCol.className = "space-y-0.5 md:col-span-4";
                     leftCol.innerHTML = `
@@ -406,7 +427,7 @@
                         <div class="text-xs text-slate-400">${lvl.creator}</div>
                     `;
 
-                    // Middle Column (Length & Skillsets properly aligned into column sections, leaving wider space)
+                    // Middle Column (Length & Skillsets)
                     let specsCol = document.createElement('div');
                     specsCol.className = "grid grid-cols-2 gap-4 md:col-span-6 text-sm text-slate-300";
                     specsCol.innerHTML = `
@@ -420,7 +441,7 @@
                         </div>
                     `;
 
-                    // Right Column (Info Button): Spans 2 columns, right aligned
+                    // Right Column (Info Button)
                     let rightAction = document.createElement('div');
                     rightAction.className = "flex items-center justify-end md:col-span-2 self-end md:self-center";
 
