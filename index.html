@@ -13,72 +13,79 @@
             theme: {
                 extend: {
                     colors: {
-                        darkbg: '#0f172a',
-                        cardbg: '#1e293b',
+                        spacebg: '#030712',
+                        spacecard: '#0b0f19',
+                        spaceborder: '#1e293b',
                     }
                 }
             }
         }
     </script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
+<body class="bg-spacebg text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]">
 
-    <div class="max-w-7xl mx-auto px-4 py-10">
+    <div class="max-w-7xl mx-auto px-4 py-12">
         <!-- Header -->
-        <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6 gap-4">
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
             <div>
-                <h1 class="text-3xl font-black tracking-tight text-white flex items-center gap-2">
-                    <span class="text-indigo-400">⚡</span> Glotch's Extreme Demon Completions
+                <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
+                    <span class="text-indigo-400">🌌</span> Glotch's Extreme Demon Completions
                 </h1>
-                <p class="text-slate-400 mt-1">
-                    All GD extreme demons completed by <a href="https://youtube.com/@glotchh" target="_blank" class="text-indigo-400 hover:underline font-medium">Glotch ↗</a>
+                <p class="text-slate-400 mt-2 text-sm md:text-base">
+                    All GD extreme demons completed by <a href="https://youtube.com/@glotchh" target="_blank" class="text-indigo-400 hover:underline font-semibold">Glotch ↗</a>
                 </p>
             </div>
-            <div id="counter-badge" class="bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm">
+            <div id="counter-badge" class="bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-indigo-950/50">
                 Loading data...
             </div>
         </header>
 
-        <!-- Controls: Filters & Search -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <!-- Sort / Filter System (3 specific drop downs) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 bg-spacecard/60 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl">
+            <!-- 1. Tier Filter -->
             <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Search Level</label>
-                <input id="search-box" type="text" placeholder="Filter by name, creator..." 
-                    class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Difficulty Filter</label>
-                <select id="filter-dropdown" 
-                    class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition">
-                    <option value="all">All Difficulties</option>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
+                <select id="tier-filter" 
+                    class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
+                    <option value="all">Show All Tiers</option>
                 </select>
             </div>
 
+            <!-- 2. Skillset Filter -->
             <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sort Options</label>
-                <select id="sort-dropdown" 
-                    class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition">
-                    <option value="default">Default Order</option>
-                    <option value="name-asc">Level Name (A - Z)</option>
-                    <option value="name-desc">Level Name (Z - A)</option>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
+                <select id="skillset-filter" 
+                    class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
+                    <option value="all">Show All Skillsets</option>
+                </select>
+            </div>
+
+            <!-- 3. Length Filter -->
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
+                <select id="length-filter" 
+                    class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
+                    <option value="all">Show All Lengths</option>
+                    <option value="medium">Medium (< 59s)</option>
+                    <option value="long">Long (60s - 119s)</option>
+                    <option value="xl">XL (> 120s)</option>
                 </select>
             </div>
         </div>
 
         <!-- Loading View -->
-        <div id="loading-view" class="text-center py-24">
+        <div id="loading-view" class="text-center py-28">
             <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
-            <p class="text-slate-400 font-medium">Parsing Google Sheets output...</p>
+            <p class="text-slate-400 font-medium">Synchronizing space registry data...</p>
         </div>
 
         <!-- Empty State View -->
-        <div id="empty-view" class="hidden text-center py-20 bg-slate-900/50 border border-slate-800 rounded-2xl">
+        <div id="empty-view" class="hidden text-center py-20 bg-spacecard/40 border border-spaceborder rounded-2xl">
             <p class="text-slate-400 text-lg">No completions matching your parameters found.</p>
         </div>
 
-        <!-- Cards Display Grid -->
-        <div id="cards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+        <!-- Main Display Container (Tier Dividers + Level Tabs) -->
+        <div id="levels-container" class="space-y-4"></div>
     </div>
 
     <script>
@@ -96,7 +103,7 @@
                 if (sheetData.length > 0) {
                     headers = Object.keys(sheetData[0]);
                 }
-                initTracker();
+                initApp();
             },
             error: function(err) {
                 console.error('CSV Parsing Error:', err);
@@ -106,61 +113,96 @@
             }
         });
 
-        function initTracker() {
+        function initApp() {
             document.getElementById('loading-view').classList.add('hidden');
-            populateFilterDropdown();
-            renderGrid(sheetData);
+            populateDropdowns();
+            renderList(sheetData);
 
-            document.getElementById('search-box').addEventListener('input', applyFilters);
-            document.getElementById('filter-dropdown').addEventListener('change', applyFilters);
-            document.getElementById('sort-dropdown').addEventListener('change', applyFilters);
+            document.getElementById('tier-filter').addEventListener('change', applyFilters);
+            document.getElementById('skillset-filter').addEventListener('change', applyFilters);
+            document.getElementById('length-filter').addEventListener('change', applyFilters);
         }
 
-        function populateFilterDropdown() {
-            const dropdown = document.getElementById('filter-dropdown');
-            let targetKey = headers.find(h => /difficulty|category|type/i.test(h)) || headers[1];
-            if (!targetKey) return;
+        function populateDropdowns() {
+            const tierSelect = document.getElementById('tier-filter');
+            const skillsetSelect = document.getElementById('skillset-filter');
 
-            let uniqueValues = [...new Set(sheetData.map(item => item[targetKey]))].filter(Boolean);
-            uniqueValues.forEach(val => {
-                let opt = document.createElement('option');
-                opt.value = val;
-                opt.textContent = val;
-                dropdown.appendChild(opt);
-            });
+            // Find matching header names dynamically
+            let tierKey = headers.find(h => /tier|difficulty/i.test(h)) || headers[1];
+            let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[2];
+
+            if (tierKey) {
+                let tiers = [...new Set(sheetData.map(item => item[tierKey]))].filter(Boolean);
+                tiers.forEach(t => {
+                    let opt = document.createElement('option');
+                    opt.value = t;
+                    opt.textContent = t;
+                    tierSelect.appendChild(opt);
+                });
+            }
+
+            if (skillsetKey) {
+                let skillsets = [...new Set(sheetData.map(item => item[skillsetKey]))].filter(Boolean);
+                skillsets.forEach(s => {
+                    let opt = document.createElement('option');
+                    opt.value = s;
+                    opt.textContent = s;
+                    skillsetSelect.appendChild(opt);
+                });
+            }
+        }
+
+        function classifyLength(lengthStr) {
+            if (!lengthStr) return 'unknown';
+            let lower = lengthStr.toLowerCase();
+            if (lower.includes('xl') || lower.includes('>')) return 'xl';
+            if (lower.includes('long') || lower.includes('60') || lower.includes('119')) return 'long';
+            if (lower.includes('medium') || lower.includes('<') || lower.includes('59')) return 'medium';
+            return 'long'; // default fallback
         }
 
         function applyFilters() {
-            const searchTerm = document.getElementById('search-box').value.toLowerCase();
-            const filterVal = document.getElementById('filter-dropdown').value;
-            const sortVal = document.getElementById('sort-dropdown').value;
+            const tierVal = document.getElementById('tier-filter').value;
+            const skillsetVal = document.getElementById('skillset-filter').value;
+            const lengthVal = document.getElementById('length-filter').value;
 
-            let targetKey = headers.find(h => /difficulty|category|type/i.test(h)) || headers[1];
-            let nameKey = headers.find(h => /name|level|title/i.test(h)) || headers[0];
+            let tierKey = headers.find(h => /tier|difficulty/i.test(h)) || headers[1];
+            let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[2];
+            let lengthKey = headers.find(h => /length|time/i.test(h)) || headers[3];
 
             let filtered = sheetData.filter(item => {
-                let matchesSearch = Object.values(item).some(val => 
-                    String(val).toLowerCase().includes(searchTerm)
-                );
-                let matchesFilter = (filterVal === 'all') || (item[targetKey] === filterVal);
-                return matchesSearch && matchesFilter;
+                let matchesTier = (tierVal === 'all') || (item[tierKey] === tierVal);
+                let matchesSkillset = (skillsetVal === 'all') || (item[skillsetKey] === skillsetVal);
+                
+                let matchesLength = true;
+                if (lengthVal !== 'all') {
+                    let itemLengthType = classifyLength(item[lengthKey]);
+                    matchesLength = (itemLengthType === lengthVal);
+                }
+
+                return matchesTier && matchesSkillset && matchesLength;
             });
 
-            if (sortVal === 'name-asc') {
-                filtered.sort((a, b) => String(a[nameKey] || '').localeCompare(String(b[nameKey] || '')));
-            } else if (sortVal === 'name-desc') {
-                filtered.sort((a, b) => String(b[nameKey] || '').localeCompare(String(a[nameKey] || '')));
-            }
-
-            renderGrid(filtered);
+            renderList(filtered);
         }
 
-        function renderGrid(data) {
-            const container = document.getElementById('cards-container');
+        function getTierColor(tierName) {
+            if (!tierName) return 'border-indigo-500/40 bg-spacecard';
+            let t = tierName.toLowerCase();
+            if (t.includes('beginner')) return 'border-blue-500/50 bg-blue-950/10 hover:border-blue-400';
+            if (t.includes('intermediate') || t.includes('medium')) return 'border-emerald-500/50 bg-emerald-950/10 hover:border-emerald-400';
+            if (t.includes('advanced') || t.includes('hard')) return 'border-amber-500/50 bg-amber-950/10 hover:border-amber-400';
+            if (t.includes('expert') || t.includes('insane')) return 'border-purple-500/50 bg-purple-950/10 hover:border-purple-400';
+            if (t.includes('extreme') || t.includes('grandmaster')) return 'border-rose-500/50 bg-rose-950/10 hover:border-rose-400';
+            return 'border-spaceborder bg-spacecard';
+        }
+
+        function renderList(data) {
+            const container = document.getElementById('levels-container');
             const emptyView = document.getElementById('empty-view');
             const badge = document.getElementById('counter-badge');
 
-            badge.textContent = `${data.length} Completions Found`;
+            badge.textContent = `${data.length} Levels Displayed`;
             container.innerHTML = '';
 
             if (data.length === 0) {
@@ -170,27 +212,68 @@
                 emptyView.classList.add('hidden');
             }
 
+            let tierKey = headers.find(h => /tier|difficulty/i.test(h)) || headers[1];
+            let nameKey = headers.find(h => /name|level|title/i.test(h)) || headers[0];
+            let creatorKey = headers.find(h => /creator|by/i.test(h)) || headers[1];
+            let lengthKey = headers.find(h => /length|time/i.test(h)) || headers[2];
+            let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[3];
+
+            let currentTier = null;
+
             data.forEach(item => {
-                let card = document.createElement('div');
-                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl hover:border-indigo-500/50 transition flex flex-col justify-between";
+                let itemTier = item[tierKey] || 'Unsorted Tier';
 
-                let innerHtml = `<div class="space-y-2.5">`;
-                headers.forEach((header, index) => {
-                    let value = item[header];
-                    if (!value) return;
+                // Insert tier separator divider when transitioning to a new tier section
+                if (itemTier !== currentTier) {
+                    currentTier = itemTier;
+                    let divider = document.createElement('div');
+                    divider.className = "flex items-center my-6 text-indigo-400/80 font-bold text-sm tracking-widest uppercase";
+                    divider.innerHTML = `
+                        <div class="flex-grow border-t border-indigo-500/20"></div>
+                        <span class="mx-4 px-3 py-1 rounded-full bg-indigo-950/50 border border-indigo-500/30 shadow-sm">----------- ${currentTier} -----------</span>
+                        <div class="flex-grow border-t border-indigo-500/20"></div>
+                    `;
+                    container.appendChild(divider);
+                }
 
-                    if (index === 0) {
-                        innerHtml += `<h3 class="text-lg font-bold text-white tracking-wide truncate">${value}</h3>`;
-                    } else if (header.toLowerCase().includes('link') || String(value).startsWith('http')) {
-                        innerHtml += `<div class="pt-1"><a href="${value}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-lg transition">Watch Proof ↗</a></div>`;
+                // Render individual level tab
+                let tab = document.createElement('div');
+                let colorClass = getTierColor(itemTier);
+                tab.className = `border rounded-xl p-4 shadow-lg transition duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${colorClass}`;
+
+                let levelName = item[nameKey] || 'Unknown Level';
+                let creator = item[creatorKey] || 'Unknown';
+                let length = item[lengthKey] || 'N/A';
+                let skillset = item[skillsetKey] || 'N/A';
+
+                // Find any remaining info fields or proofs/links
+                let extraInfoHTML = '';
+                headers.forEach(h => {
+                    if ([nameKey, creatorKey, lengthKey, skillsetKey, tierKey].includes(h)) return;
+                    let val = item[h];
+                    if (!val) return;
+                    if (String(val).startsWith('http')) {
+                        extraInfoHTML += `<a href="${val}" target="_blank" class="text-xs font-semibold bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white px-2.5 py-1 rounded-md transition ml-2">Proof ↗</a>`;
                     } else {
-                        innerHtml += `<div class="text-sm flex justify-between items-center"><span class="text-slate-400 text-xs uppercase tracking-wider">${header}</span> <span class="text-slate-200 font-medium truncate ml-2">${value}</span></div>`;
+                        extraInfoHTML += `<span class="ml-2 text-slate-400">• ${h}: <span class="text-slate-300">${val}</span></span>`;
                     }
                 });
-                innerHtml += `</div>`;
 
-                card.innerHTML = innerHtml;
-                container.appendChild(card);
+                tab.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="text-base md:text-lg font-bold text-white tracking-wide">${levelName}</div>
+                        <div class="text-xs md:text-sm text-slate-400 font-normal flex flex-wrap items-center gap-x-3 gap-y-1">
+                            <span><strong class="text-slate-300 font-medium">Creator(s):</strong> ${creator}</span>
+                            <span><strong class="text-slate-300 font-medium">Length:</strong> ${length}</span>
+                            <span><strong class="text-slate-300 font-medium">Skillsets:</strong> ${skillset}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center text-xs text-slate-400 self-end sm:self-center">
+                        ${extraInfoHTML}
+                    </div>
+                `;
+
+                container.appendChild(tab);
             });
         }
     </script>
