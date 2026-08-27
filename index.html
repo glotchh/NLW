@@ -32,7 +32,7 @@
                     <span class="text-indigo-400">🌌</span> Non-Listworthy Extreme Demons
                 </h1>
                 <p class="text-slate-400 mt-2 text-sm md:text-base">
-                    <a href="https://docs.google.com/spreadsheets/d/1YxUE2kkvhT2E6AjnkvTf-o8iu_shSLbuFkEFcZOvieA" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet ↗</a>
+                    <a href="https://docs.google.com/spreadsheets/d/1LZrrAxgA1XQbngwohoxjZmMUHvIuq49ee8TL4z-yQoE/edit?gid=0#gid=0" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet ↗</a>
                 </p>
             </div>
             <div id="counter-badge" class="bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-indigo-950/50">
@@ -40,14 +40,14 @@
             </div>
         </header>
 
-        <!-- Filters / Sort System -->
+        <!-- Filters Section -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 bg-spacecard/60 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl">
             <!-- 1. Tier Filter -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
                 <select id="tier-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All</option>
+                    <option value="all">Show All Tiers</option>
                 </select>
             </div>
 
@@ -56,7 +56,7 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
                 <select id="skillset-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All</option>
+                    <option value="all">Show All Skillsets</option>
                 </select>
             </div>
 
@@ -65,10 +65,10 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
                 <select id="length-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All</option>
-                    <option value="medium">Medium (< 59s)</option>
-                    <option value="long">Long (60s - 119s)</option>
-                    <option value="xl">XL (> 120s)</option>
+                    <option value="all">Show All Lengths</option>
+                    <option value="medium">Medium</option>
+                    <option value="long">Long</option>
+                    <option value="xl">XL</option>
                 </select>
             </div>
         </div>
@@ -76,33 +76,31 @@
         <!-- Loading View -->
         <div id="loading-view" class="text-center py-28">
             <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
-            <p class="text-slate-400 font-medium">Synchronizing sheet data...</p>
+            <p class="text-slate-400 font-medium">Reading sheet structure...</p>
         </div>
 
         <!-- Empty State View -->
         <div id="empty-view" class="hidden text-center py-20 bg-spacecard/40 border border-spaceborder rounded-2xl">
-            <p class="text-slate-400 text-lg">No items matching your parameters found.</p>
+            <p class="text-slate-400 text-lg">No levels found matching your criteria.</p>
         </div>
 
         <!-- Main Display Container -->
         <div id="levels-container" class="space-y-4"></div>
     </div>
 
-    <!-- Slide-over Modal for Level Info -->
+    <!-- Slide-over Modal for Extra Info -->
     <div id="info-modal" class="fixed inset-0 z-50 overflow-hidden hidden">
         <div id="modal-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0"></div>
         <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
             <div id="modal-panel" class="w-screen max-w-md bg-spacecard border-l border-spaceborder p-6 shadow-2xl transform transition-transform duration-300 ease-in-out translate-x-full flex flex-col justify-between">
                 <div>
                     <div class="flex items-center justify-between border-b border-spaceborder pb-4 mb-6">
-                        <h3 id="modal-title" class="text-xl font-bold text-white tracking-wide">Level Information</h3>
+                        <h3 id="modal-title" class="text-xl font-bold text-white tracking-wide">Level Details</h3>
                         <button id="close-modal" class="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-900 border border-spaceborder">
                             ✕
                         </button>
                     </div>
-                    <div id="modal-content" class="space-y-4 text-sm text-slate-300">
-                        <!-- Dynamically injected info -->
-                    </div>
+                    <div id="modal-content" class="space-y-4 text-sm text-slate-300"></div>
                 </div>
                 <div class="border-t border-spaceborder pt-4 text-xs text-slate-500 text-center">
                     Non-Listworthy Extreme Demons Database
@@ -112,55 +110,104 @@
     </div>
 
     <script>
+        // CSV export link matching the exact sheet provided
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkS3uixPNrHp_nnr8dh2XENMuXvPF30vnVykoDDEySHWmdDpK7KZ8EPqZf-uaVA1oc1UgJr0hMKyDu/pub?output=csv';
 
-        // Exact strict allowed tiers list
+        // Official selectable tiers in order
         const VALID_TIERS = [
             'Beginner', 'Easy', 'Medium', 'Hard', 'Very Hard', 'Insane', 
             'Extreme', 'Remorseless', 'Relentless', 'Terrifying', 
             'Catastrophic', 'Inexorable', 'Excruciating', 'Merciless'
         ];
 
-        // Exact standardized skillsets
+        // Standardized selectable skillsets
         const VALID_SKILLSETS = [
             'Ship', 'Learny', 'Memory', 'Timings', 'Wave', 'Duals', 
             'High-CPS', 'Nerve-control', 'All-around', 'Unbalanced', 'Chokepoints'
         ];
 
-        let sheetData = [];
-        let headers = [];
+        let structuredSections = []; // Will hold parsed blocks { tierName, levels: [...] }
+        let allLevelsFlat = [];
 
         Papa.parse(CSV_URL, {
             download: true,
-            header: true,
-            skipEmptyLines: true,
+            header: false, // Parse as raw array rows so we can accurately detect sheet block structures
+            skipEmptyLines: false,
             complete: function(results) {
-                // Filter out rows matching side menus / shortcuts / headers
-                sheetData = results.data.filter(item => {
-                    let firstVal = Object.values(item)[0];
-                    if (!firstVal) return false;
-                    let text = String(firstVal).toLowerCase();
-                    if (text.includes('shortcuts') || text.includes('more levels')) return false;
-                    return true;
-                });
-
-                if (sheetData.length > 0) {
-                    headers = Object.keys(sheetData[0]);
-                }
+                parseSheetLayout(results.data);
                 initApp();
             },
             error: function(err) {
                 console.error('CSV Parsing Error:', err);
                 document.getElementById('loading-view').innerHTML = `
-                    <p class="text-red-400 font-semibold">Failed to parse Google Sheets output. Make sure you are running via a local server or GitHub Pages.</p>
+                    <p class="text-red-400 font-semibold">Failed to fetch or parse Google Sheets CSV. Please verify publish settings.</p>
                 `;
             }
         });
 
+        // Parse raw CSV rows to faithfully replicate sheet tier grouping rows and level item ordering
+        function parseSheetLayout(rows) {
+            structuredSections = [];
+            allLevelsFlat = [];
+
+            let currentTier = null;
+            let currentLevels = [];
+
+            rows.forEach((row, rowIndex) => {
+                let rowStringArray = row.map(cell => String(cell || '').trim());
+                let joinedRowText = rowStringArray.join(' ').toLowerCase();
+
+                // Skip navigation/shortcuts sidebar block markers if present in sheet columns
+                if (joinedRowText.includes('shortcuts') || joinedRowText.includes('more levels')) {
+                    return;
+                }
+
+                // Check if this row represents a tier heading marker
+                let matchedTier = null;
+                for (let cell of rowStringArray) {
+                    let found = VALID_TIERS.find(t => t.toLowerCase() === cell.toLowerCase());
+                    if (found) {
+                        matchedTier = found;
+                        break;
+                    }
+                }
+
+                if (matchedTier) {
+                    // Push previous tier section if valid
+                    if (currentTier && currentLevels.length > 0) {
+                        structuredSections.push({ tier: currentTier, levels: currentLevels });
+                    }
+                    currentTier = matchedTier;
+                    currentLevels = [];
+                } else if (currentTier) {
+                    // Assume non-empty row elements under an active tier are levels
+                    let nonEmpties = rowStringArray.filter(c => c.length > 0);
+                    if (nonEmpties.length >= 2) {
+                        let levelObj = {
+                            tier: currentTier,
+                            name: rowStringArray[0] || nonEmpties[0] || 'Unknown Level',
+                            creator: rowStringArray[1] || nonEmpties[1] || 'Unknown',
+                            length: rowStringArray[2] || nonEmpties[2] || 'N/A',
+                            skillset: rowStringArray[3] || nonEmpties[3] || 'N/A',
+                            rawRowData: rowStringArray,
+                            originalIndex: allLevelsFlat.length
+                        };
+                        currentLevels.push(levelObj);
+                        allLevelsFlat.push(levelObj);
+                    }
+                }
+            });
+
+            // Push final remaining block
+            if (currentTier && currentLevels.length > 0) {
+                structuredSections.push({ tier: currentTier, levels: currentLevels });
+            }
+        }
+
         function initApp() {
             document.getElementById('loading-view').classList.add('hidden');
             populateDropdowns();
-            renderList(sheetData);
+            renderSections(structuredSections);
 
             document.getElementById('tier-filter').addEventListener('change', applyFilters);
             document.getElementById('skillset-filter').addEventListener('change', applyFilters);
@@ -189,58 +236,39 @@
             });
         }
 
-        function classifyLength(lengthStr) {
-            if (!lengthStr) return 'unknown';
-            let lower = lengthStr.toLowerCase();
-            if (lower.includes('xl') || lower.includes('>')) return 'xl';
-            if (lower.includes('long') || lower.includes('60') || lower.includes('119')) return 'long';
-            if (lower.includes('medium') || lower.includes('<') || lower.includes('59')) return 'medium';
-            return 'long';
-        }
-
-        // Helper to find the actual tier value from a row by scanning all columns for any match against VALID_TIERS
-        function extractTierFromRow(item) {
-            for (let val of Object.values(item)) {
-                if (!val) continue;
-                let strVal = String(val).trim();
-                let matched = VALID_TIERS.find(t => t.toLowerCase() === strVal.toLowerCase());
-                if (matched) return matched;
-            }
-            return null;
-        }
-
         function applyFilters() {
             const tierVal = document.getElementById('tier-filter').value;
             const skillsetVal = document.getElementById('skillset-filter').value;
             const lengthVal = document.getElementById('length-filter').value;
 
-            let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[2];
-            let lengthKey = headers.find(h => /length|time/i.test(h)) || headers[3];
+            let filteredSections = [];
+            let totalMatchedCount = 0;
 
-            let filtered = sheetData.filter(item => {
-                let rowTier = extractTierFromRow(item);
-                let itemSkillsets = String(item[skillsetKey] || '');
-
-                // Ensure the row actually contains a valid tier classification
-                if (!rowTier) return false;
-
-                let matchesTier = (tierVal === 'all') || (rowTier.toLowerCase() === tierVal.toLowerCase());
-                
-                let matchesSkillset = true;
-                if (skillsetVal !== 'all') {
-                    matchesSkillset = itemSkillsets.toLowerCase().includes(skillsetVal.toLowerCase());
-                }
-                
-                let matchesLength = true;
-                if (lengthVal !== 'all') {
-                    let itemLengthType = classifyLength(item[lengthKey]);
-                    matchesLength = (itemLengthType === lengthVal);
+            structuredSections.forEach(section => {
+                if (tierVal !== 'all' && section.tier.toLowerCase() !== tierVal.toLowerCase()) {
+                    return;
                 }
 
-                return matchesTier && matchesSkillset && matchesLength;
+                let matchedLevels = section.levels.filter(lvl => {
+                    let matchesSkillset = (skillsetVal === 'all') || lvl.skillset.toLowerCase().includes(skillsetVal.toLowerCase());
+                    let matchesLength = true;
+                    if (lengthVal !== 'all') {
+                        let lLower = lvl.length.toLowerCase();
+                        matchesLength = lLower.includes(lengthVal.toLowerCase());
+                    }
+                    return matchesSkillset && matchesLength;
+                });
+
+                if (matchedLevels.length > 0) {
+                    filteredSections.push({
+                        tier: section.tier,
+                        levels: matchedLevels
+                    });
+                    totalMatchedCount += matchedLevels.length;
+                }
             });
 
-            renderList(filtered);
+            renderSections(filteredSections, totalMatchedCount);
         }
 
         function getTierColor(tierName) {
@@ -263,18 +291,16 @@
             return 'border-spaceborder bg-spacecard';
         }
 
-        function openModal(itemTitle, contentObj) {
-            document.getElementById('modal-title').textContent = itemTitle;
+        function openModal(lvl) {
+            document.getElementById('modal-title').textContent = lvl.name;
             const contentContainer = document.getElementById('modal-content');
-            contentContainer.innerHTML = '';
-
-            for (const [key, val] of Object.entries(contentObj)) {
-                if (!val) continue;
-                let row = document.createElement('div');
-                row.className = "flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder";
-                row.innerHTML = `<span class="text-xs uppercase font-bold text-slate-400 tracking-wider">${key}</span><span class="text-slate-200 mt-1">${val}</span>`;
-                contentContainer.appendChild(row);
-            }
+            contentContainer.innerHTML = `
+                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Level Name</span><span class="text-slate-200 mt-1">${lvl.name}</span></div>
+                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Creator</span><span class="text-slate-200 mt-1">${lvl.creator}</span></div>
+                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Tier Category</span><span class="text-slate-200 mt-1">${lvl.tier}</span></div>
+                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Length</span><span class="text-slate-200 mt-1">${lvl.length}</span></div>
+                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Skillsets</span><span class="text-slate-200 mt-1">${lvl.skillset}</span></div>
+            `;
 
             const modal = document.getElementById('info-modal');
             const backdrop = document.getElementById('modal-backdrop');
@@ -299,45 +325,28 @@
             }, 300);
         }
 
-        function renderList(data) {
+        function renderSections(sectionsToRender, explicitCount = null) {
             const container = document.getElementById('levels-container');
             const emptyView = document.getElementById('empty-view');
             const badge = document.getElementById('counter-badge');
 
             container.innerHTML = '';
 
-            // Clean data to only include rows that map to a legitimate valid tier
-            let validRows = data.filter(item => extractTierFromRow(item) !== null);
+            let totalCount = explicitCount !== null ? explicitCount : sectionsToRender.reduce((acc, s) => acc + s.levels.length, 0);
+            badge.textContent = `${totalCount} Levels Displayed`;
 
-            badge.textContent = `${validRows.length} Levels Displayed`;
-
-            if (validRows.length === 0) {
+            if (sectionsToRender.length === 0 || totalCount === 0) {
                 emptyView.classList.remove('hidden');
                 return;
             } else {
                 emptyView.classList.add('hidden');
             }
 
-            let nameKey = headers.find(h => /name|level|title/i.test(h)) || headers[0];
-            let creatorKey = headers.find(h => /creator|by/i.test(h)) || headers[1];
-            let lengthKey = headers.find(h => /length|time/i.test(h)) || headers[2];
-            let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[3];
+            sectionsToRender.forEach(section => {
+                let count = section.levels.length;
+                let tierName = section.tier;
 
-            // Group valid rows strictly by their matched valid tier in the order of VALID_TIERS
-            let tierGroups = {};
-            validRows.forEach(item => {
-                let t = extractTierFromRow(item);
-                if (!tierGroups[t]) tierGroups[t] = [];
-                tierGroups[t].push(item);
-            });
-
-            VALID_TIERS.forEach(tierName => {
-                if (!tierGroups[tierName] || tierGroups[tierName].length === 0) return;
-
-                let itemsInTier = tierGroups[tierName];
-                let count = itemsInTier.length;
-
-                // Tier section separator banner matching requested image format: < NUMBER > | < TIER >
+                // Exactly match the sheet divider style: < NUMBER > | < TIER > wrapped in horizontal lines
                 let divider = document.createElement('div');
                 divider.className = "flex items-center my-6 text-indigo-400/80 font-bold text-sm tracking-widest uppercase";
                 divider.innerHTML = `
@@ -349,28 +358,23 @@
                 `;
                 container.appendChild(divider);
 
-                itemsInTier.forEach(item => {
+                section.levels.forEach(lvl => {
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     tab.className = `border rounded-xl px-5 py-4 shadow-lg transition duration-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${colorClass}`;
 
-                    let levelName = item[nameKey] || 'Unknown Level';
-                    let creator = item[creatorKey] || 'Unknown';
-                    let length = item[lengthKey] || 'N/A';
-                    let skillset = item[skillsetKey] || 'N/A';
-
                     let leftCol = document.createElement('div');
                     leftCol.className = "space-y-0.5";
                     leftCol.innerHTML = `
-                        <div class="text-lg font-bold text-white tracking-wide">${levelName}</div>
-                        <div class="text-xs text-slate-400">by ${creator}</div>
+                        <div class="text-lg font-bold text-white tracking-wide">${lvl.name}</div>
+                        <div class="text-xs text-slate-400">by ${lvl.creator}</div>
                     `;
 
                     let specsCol = document.createElement('div');
                     specsCol.className = "flex flex-wrap items-center gap-6 text-sm text-slate-300";
                     specsCol.innerHTML = `
-                        <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Length</span><span class="font-medium text-slate-200">${length}</span></div>
-                        <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Skillsets</span><span class="font-medium text-slate-200">${skillset}</span></div>
+                        <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Length</span><span class="font-medium text-slate-200">${lvl.length}</span></div>
+                        <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Skillsets</span><span class="font-medium text-slate-200">${lvl.skillset}</span></div>
                     `;
 
                     let rightAction = document.createElement('div');
@@ -379,7 +383,7 @@
                     let infoBtn = document.createElement('button');
                     infoBtn.className = "bg-slate-900 border border-spaceborder hover:border-indigo-500 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-md";
                     infoBtn.innerHTML = `ℹ️ Info`;
-                    infoBtn.onclick = () => openModal(levelName, item);
+                    infoBtn.onclick = () => openModal(lvl);
 
                     rightAction.appendChild(infoBtn);
 
