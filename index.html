@@ -22,10 +22,45 @@
             }
         }
     </script>
+    <style>
+        /* Background Video Styles */
+        #bg-video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -10;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        #bg-video-container iframe {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 100vw;
+            height: 56.25vw; /* 16:9 aspect ratio */
+            min-height: 100vh;
+            min-width: 177.77vh; /* 16:9 aspect ratio */
+            transform: translate(-50%, -50%);
+        }
+    </style>
 </head>
-<body class="bg-spacebg text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(120,119,198,0.15),rgba(255,255,255,0))]">
+<body class="bg-spacebg text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white relative">
 
-    <div class="max-w-7xl mx-auto px-4 py-12">
+    <!-- Background YouTube Video Wrapper -->
+    <div id="bg-video-container">
+        <iframe 
+            src="https://www.youtube.com/embed/B_qJCHfojjU?autoplay=1&mute=1&controls=0&loop=1&playlist=B_qJCHfojjU&disablekb=1&modestbranding=1&showinfo=0" 
+            title="Background Video" 
+            frameborder="0" 
+            allow="autoplay; encrypted-media">
+        </iframe>
+    </div>
+    <!-- Dark overlay to ensure text readability over the video -->
+    <div id="bg-overlay" class="fixed inset-0 bg-spacebg/85 backdrop-blur-[2px] z-[-5] transition-opacity duration-300"></div>
+
+    <div class="max-w-7xl mx-auto px-4 py-12 relative z-10">
         <!-- Header -->
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
             <div>
@@ -36,38 +71,53 @@
                     <a href="https://docs.google.com/spreadsheets/d/1YxUE2kkvhT2E6AjnkvTf-o8iu_shSLbuFkEFcZOvieA/" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet</a>
                 </p>
             </div>
-            <div id="counter-badge" class="bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-indigo-950/50">
+            <div id="counter-badge" class="bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-indigo-950/50 backdrop-blur-md">
                 Loading data...
             </div>
         </header>
 
-        <!-- Filters Section -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 bg-spacecard/60 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl">
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
-                <select id="tier-filter" 
-                    class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">All Tiers</option>
-                </select>
+        <!-- Search & Filters Section (1/3 Search, 2/3 Filters) -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 mb-10 bg-spacecard/70 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl">
+            <!-- Search Bar (~1/3 width = md:col-span-4) -->
+            <div class="md:col-span-4 flex flex-col justify-between">
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Search Level or Creator</label>
+                <div class="relative w-full">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-500">
+                        🔍
+                    </span>
+                    <input id="search-input" type="text" placeholder="Type level or creator..." 
+                        class="w-full bg-slate-900 border border-spaceborder rounded-xl pl-10 pr-4 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm">
+                </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
-                <select id="skillset-filter" 
-                    class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">All Skillsets</option>
-                </select>
-            </div>
+            <!-- Filters Group (~2/3 width = md:col-span-8) -->
+            <div class="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
+                    <select id="tier-filter" 
+                        class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm">
+                        <option value="all">All Tiers</option>
+                    </select>
+                </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
-                <select id="length-filter" 
-                    class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">All Lengths</option>
-                    <option value="medium">Medium (&lt; 0:59)</option>
-                    <option value="long">Long (1:00 - 1:59)</option>
-                    <option value="xl">XL (&gt;= 2:00)</option>
-                </select>
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
+                    <select id="skillset-filter" 
+                        class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm">
+                        <option value="all">All Skillsets</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
+                    <select id="length-filter" 
+                        class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm">
+                        <option value="all">All Lengths</option>
+                        <option value="medium">Medium (&lt; 0:59)</option>
+                        <option value="long">Long (1:00 - 1:59)</option>
+                        <option value="xl">XL (&gt;= 2:00)</option>
+                    </select>
+                </div>
             </div>
         </div>
 
@@ -78,12 +128,27 @@
         </div>
 
         <!-- Empty State View -->
-        <div id="empty-view" class="hidden text-center py-20 bg-spacecard/40 border border-spaceborder rounded-2xl">
+        <div id="empty-view" class="hidden text-center py-20 bg-spacecard/40 border border-spaceborder rounded-2xl backdrop-blur-md">
             <p class="text-slate-400 text-lg">No levels found matching your criteria.</p>
         </div>
 
         <!-- Main Display Container -->
         <div id="levels-container" class="space-y-4"></div>
+    </div>
+
+    <!-- Toggle Background Video Button (Bottom Right) -->
+    <div class="fixed bottom-5 right-5 z-50 group">
+        <button id="toggle-bg-btn" 
+            class="bg-spacecard/90 hover:bg-indigo-950 border border-spaceborder hover:border-indigo-500 text-slate-300 hover:text-white p-3 rounded-full shadow-2xl backdrop-blur-md transition flex items-center justify-center">
+            <!-- Video Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+        </button>
+        <!-- Tooltip -->
+        <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block px-3 py-1 bg-slate-900 border border-spaceborder text-xs text-slate-200 rounded-lg shadow-xl whitespace-nowrap pointer-events-none">
+            Toggle Background Video
+        </div>
     </div>
 
     <!-- Slide-over Modal for Extra Info -->
@@ -186,8 +251,8 @@
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
                             enjoyment: rowStringArray[5] || 'N/A',
-                            levelId: rowStringArray[6] || '',   // Column G data stays here
-                            levelInfo: rowStringArray[7] || '', // Column H data stays here
+                            levelId: rowStringArray[6] || '',   
+                            levelInfo: rowStringArray[7] || '', 
                             fullRowData: rowStringArray
                         };
                         currentLevels.push(levelObj);
@@ -205,12 +270,36 @@
             populateDropdowns();
             renderSections(structuredSections);
 
+            document.getElementById('search-input').addEventListener('input', applyFilters);
             document.getElementById('tier-filter').addEventListener('change', applyFilters);
             document.getElementById('skillset-filter').addEventListener('change', applyFilters);
             document.getElementById('length-filter').addEventListener('change', applyFilters);
 
             document.getElementById('close-modal').addEventListener('click', closeModal);
             document.getElementById('modal-backdrop').addEventListener('click', closeModal);
+
+            // Background Video Toggle Event
+            const bgContainer = document.getElementById('bg-video-container');
+            const bgOverlay = document.getElementById('bg-overlay');
+            const toggleBtn = document.getElementById('toggle-bg-btn');
+
+            let isVideoVisible = true;
+            toggleBtn.addEventListener('click', () => {
+                isVideoVisible = !isVideoVisible;
+                if (isVideoVisible) {
+                    bgContainer.style.display = 'block';
+                    bgOverlay.classList.remove('bg-spacebg');
+                    bgOverlay.classList.add('bg-spacebg/85');
+                    toggleBtn.classList.remove('text-slate-600', 'border-slate-800');
+                    toggleBtn.classList.add('text-slate-300', 'border-spaceborder');
+                } else {
+                    bgContainer.style.display = 'none';
+                    bgOverlay.classList.remove('bg-spacebg/85');
+                    bgOverlay.classList.add('bg-spacebg');
+                    toggleBtn.classList.remove('text-slate-300', 'border-spaceborder');
+                    toggleBtn.classList.add('text-slate-600', 'border-slate-800');
+                }
+            });
         }
 
         function populateDropdowns() {
@@ -245,6 +334,7 @@
         }
 
         function applyFilters() {
+            const searchVal = document.getElementById('search-input').value.trim().toLowerCase();
             const tierVal = document.getElementById('tier-filter').value;
             const skillsetVal = document.getElementById('skillset-filter').value;
             const lengthVal = document.getElementById('length-filter').value;
@@ -258,6 +348,14 @@
                 }
 
                 let matchedLevels = section.levels.filter(lvl => {
+                    // Search Query match (Level Name or Creator)
+                    let matchesSearch = true;
+                    if (searchVal !== '') {
+                        let nameMatch = lvl.name.toLowerCase().includes(searchVal);
+                        let creatorMatch = lvl.creator.toLowerCase().includes(searchVal);
+                        matchesSearch = nameMatch || creatorMatch;
+                    }
+
                     let matchesSkillset = (skillsetVal === 'all') || lvl.skillset.toLowerCase().includes(skillsetVal.toLowerCase());
                     
                     let matchesLength = true;
@@ -272,7 +370,7 @@
                         }
                     }
 
-                    return matchesSkillset && matchesLength;
+                    return matchesSearch && matchesSkillset && matchesLength;
                 });
 
                 if (matchedLevels.length > 0) {
@@ -288,23 +386,23 @@
         }
 
         function getTierColor(tierName) {
-            if (!tierName) return 'border-indigo-500/40 bg-spacecard';
+            if (!tierName) return 'border-indigo-500/40 bg-spacecard/80';
             let t = tierName.toLowerCase();
-            if (t.includes('beginner')) return 'border-blue-500/50 bg-blue-950/10 hover:border-blue-400';
-            if (t.includes('easy')) return 'border-cyan-500/50 bg-cyan-950/10 hover:border-cyan-400';
-            if (t.includes('medium')) return 'border-green-500/50 bg-green-950/10 hover:border-green-400';
-            if (t.includes('hard')) return 'border-yellow-500/50 bg-yellow-950/10 hover:border-yellow-400';
-            if (t.includes('very hard')) return 'border-orange-500/50 bg-orange-950/10 hover:border-orange-400';
-            if (t.includes('insane')) return 'border-red-500/50 bg-red-950/10 hover:border-red-400';
-            if (t.includes('extreme')) return 'border-fuchsia-500/50 bg-fuchsia-950/10 hover:border-fuchsia-400';
-            if (t.includes('remorseless')) return 'border-purple-500/50 bg-purple-950/10 hover:border-purple-400';
-            if (t.includes('relentless')) return 'border-pink-500/50 bg-pink-950/10 hover:border-pink-400';
-            if (t.includes('terrifying')) return 'border-rose-500/50 bg-rose-950/10 hover:border-rose-400';
-            if (t.includes('catastrophic')) return 'border-amber-600/50 bg-amber-950/10 hover:border-amber-500';
-            if (t.includes('inexorable')) return 'border-indigo-500/50 bg-indigo-950/10 hover:border-indigo-400';
-            if (t.includes('excruciating')) return 'border-violet-500/50 bg-violet-950/10 hover:border-violet-400';
-            if (t.includes('merciless')) return 'border-red-700/50 bg-red-950/20 hover:border-red-500';
-            return 'border-spaceborder bg-spacecard';
+            if (t.includes('beginner')) return 'border-blue-500/50 bg-blue-950/20 hover:border-blue-400';
+            if (t.includes('easy')) return 'border-cyan-500/50 bg-cyan-950/20 hover:border-cyan-400';
+            if (t.includes('medium')) return 'border-green-500/50 bg-green-950/20 hover:border-green-400';
+            if (t.includes('hard')) return 'border-yellow-500/50 bg-yellow-950/20 hover:border-yellow-400';
+            if (t.includes('very hard')) return 'border-orange-500/50 bg-orange-950/20 hover:border-orange-400';
+            if (t.includes('insane')) return 'border-red-500/50 bg-red-950/20 hover:border-red-400';
+            if (t.includes('extreme')) return 'border-fuchsia-500/50 bg-fuchsia-950/20 hover:border-fuchsia-400';
+            if (t.includes('remorseless')) return 'border-purple-500/50 bg-purple-950/20 hover:border-purple-400';
+            if (t.includes('relentless')) return 'border-pink-500/50 bg-pink-950/20 hover:border-pink-400';
+            if (t.includes('terrifying')) return 'border-rose-500/50 bg-rose-950/20 hover:border-rose-400';
+            if (t.includes('catastrophic')) return 'border-amber-600/50 bg-amber-950/20 hover:border-amber-500';
+            if (t.includes('inexorable')) return 'border-indigo-500/50 bg-indigo-950/20 hover:border-indigo-400';
+            if (t.includes('excruciating')) return 'border-violet-500/50 bg-violet-950/20 hover:border-violet-400';
+            if (t.includes('merciless')) return 'border-red-700/50 bg-red-950/30 hover:border-red-500';
+            return 'border-spaceborder bg-spacecard/80';
         }
 
         function openModal(lvl) {
@@ -312,8 +410,7 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // 1. Swapped names ("Level Info" shows Column G data, "Level ID" shows Column H data)
-            // 2. Showcase completely removed from fields array
+            // Swapped Level Info & Level ID names, Showcase removed entirely
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
@@ -325,7 +422,7 @@
 
             fields.forEach(f => {
                 let div = document.createElement('div');
-                div.className = "space-y-1 bg-slate-900/60 p-3.5 rounded-xl border border-spaceborder";
+                div.className = "space-y-1 bg-slate-900/80 p-3.5 rounded-xl border border-spaceborder backdrop-blur-sm";
                 div.innerHTML = `
                     <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">${f.label}</div>
                     <div class="text-slate-200 font-medium">${f.value}</div>
@@ -381,7 +478,7 @@
                 divider.className = "flex items-center my-8 text-indigo-400 font-bold tracking-widest uppercase";
                 divider.innerHTML = `
                     <div class="flex-grow border-t border-indigo-500/30"></div>
-                    <span class="mx-6 px-6 py-2 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 shadow-md text-indigo-200 font-mono text-base md:text-lg">
+                    <span class="mx-6 px-6 py-2 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 shadow-md text-indigo-200 font-mono text-base md:text-lg backdrop-blur-md">
                         ${count} | <strong>${tierName}</strong>
                     </span>
                     <div class="flex-grow border-t border-indigo-500/30"></div>
@@ -392,7 +489,7 @@
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     
-                    tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 ${colorClass}`;
+                    tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 backdrop-blur-md ${colorClass}`;
 
                     let leftCol = document.createElement('div');
                     leftCol.className = "space-y-0.5 md:col-span-4";
