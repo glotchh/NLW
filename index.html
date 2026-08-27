@@ -29,7 +29,7 @@
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                    <span class="text-indigo-400">🌌</span> Non-Listworthy Extreme Demons
+                    Non-Listworthy Extreme Demons
                 </h1>
                 <p class="text-slate-400 mt-2 text-sm md:text-base">
                     <a href="https://docs.google.com/spreadsheets/d/1LZrrAxgA1XQbngwohoxjZmMUHvIuq49ee8TL4z-yQoE/edit?gid=0#gid=0" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet ↗</a>
@@ -110,28 +110,25 @@
     </div>
 
     <script>
-        // CSV export link matching the exact sheet provided
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkS3uixPNrHp_nnr8dh2XENMuXvPF30vnVykoDDEySHWmdDpK7KZ8EPqZf-uaVA1oc1UgJr0hMKyDu/pub?output=csv';
 
-        // Official selectable tiers in order
         const VALID_TIERS = [
             'Beginner', 'Easy', 'Medium', 'Hard', 'Very Hard', 'Insane', 
             'Extreme', 'Remorseless', 'Relentless', 'Terrifying', 
             'Catastrophic', 'Inexorable', 'Excruciating', 'Merciless'
         ];
 
-        // Standardized selectable skillsets
         const VALID_SKILLSETS = [
             'Ship', 'Learny', 'Memory', 'Timings', 'Wave', 'Duals', 
             'High-CPS', 'Nerve-control', 'All-around', 'Unbalanced', 'Chokepoints'
         ];
 
-        let structuredSections = []; // Will hold parsed blocks { tierName, levels: [...] }
-        let allLevelsFlat = [];
+        let structuredSections = []; 
+        let sheetHeaders = [];
 
         Papa.parse(CSV_URL, {
             download: true,
-            header: false, // Parse as raw array rows so we can accurately detect sheet block structures
+            header: false,
             skipEmptyLines: false,
             complete: function(results) {
                 parseSheetLayout(results.data);
@@ -145,11 +142,8 @@
             }
         });
 
-        // Parse raw CSV rows to faithfully replicate sheet tier grouping rows and level item ordering
         function parseSheetLayout(rows) {
             structuredSections = [];
-            allLevelsFlat = [];
-
             let currentTier = null;
             let currentLevels = [];
 
@@ -157,12 +151,16 @@
                 let rowStringArray = row.map(cell => String(cell || '').trim());
                 let joinedRowText = rowStringArray.join(' ').toLowerCase();
 
-                // Skip navigation/shortcuts sidebar block markers if present in sheet columns
-                if (joinedRowText.includes('shortcuts') || joinedRowText.includes('more levels')) {
+                // Capture header row if it contains names like level, creator, etc.
+                if (rowIndex === 0 || joinedRowText.includes('level') && joinedRowText.includes('creator')) {
+                    sheetHeaders = rowStringArray;
+                }
+
+                // Ignore irrelevant tiers
+                if (joinedRowText.includes('shortcuts') || joinedRowText.includes('more levels') || joinedRowText.includes('fuck')) {
                     return;
                 }
 
-                // Check if this row represents a tier heading marker
                 let matchedTier = null;
                 for (let cell of rowStringArray) {
                     let found = VALID_TIERS.find(t => t.toLowerCase() === cell.toLowerCase());
@@ -173,32 +171,32 @@
                 }
 
                 if (matchedTier) {
-                    // Push previous tier section if valid
                     if (currentTier && currentLevels.length > 0) {
                         structuredSections.push({ tier: currentTier, levels: currentLevels });
                     }
                     currentTier = matchedTier;
                     currentLevels = [];
                 } else if (currentTier) {
-                    // Assume non-empty row elements under an active tier are levels
-                    let nonEmpties = rowStringArray.filter(c => c.length > 0);
+                    // Ignore column A (index 0) per requirement: "IGNORE THE A COLUMN IT IS USELESS"
+                    // We look at columns starting from index 1 onwards
+                    let relevantCells = rowStringArray.slice(1);
+                    let nonEmpties = relevantCells.filter(c => c.length > 0);
+
                     if (nonEmpties.length >= 2) {
+                        // Map properties robustly from columns B onwards (Index 1 = Level Name, Index 2 = Creator, etc.)
                         let levelObj = {
                             tier: currentTier,
-                            name: rowStringArray[0] || nonEmpties[0] || 'Unknown Level',
-                            creator: rowStringArray[1] || nonEmpties[1] || 'Unknown',
-                            length: rowStringArray[2] || nonEmpties[2] || 'N/A',
-                            skillset: rowStringArray[3] || nonEmpties[3] || 'N/A',
-                            rawRowData: rowStringArray,
-                            originalIndex: allLevelsFlat.length
+                            name: rowStringArray[1] || nonEmpties[0] || 'Unknown Level',
+                            creator: rowStringArray[2] || nonEmpties[1] || 'Unknown',
+                            length: rowStringArray[3] || nonEmpties[2] || 'N/A',
+                            skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
+                            fullRowData: rowStringArray // preserves everything for the modal popup
                         };
                         currentLevels.push(levelObj);
-                        allLevelsFlat.push(levelObj);
                     }
                 }
             });
 
-            // Push final remaining block
             if (currentTier && currentLevels.length > 0) {
                 structuredSections.push({ tier: currentTier, levels: currentLevels });
             }
@@ -294,13 +292,21 @@
         function openModal(lvl) {
             document.getElementById('modal-title').textContent = lvl.name;
             const contentContainer = document.getElementById('modal-content');
-            contentContainer.innerHTML = `
-                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Level Name</span><span class="text-slate-200 mt-1">${lvl.name}</span></div>
-                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Creator</span><span class="text-slate-200 mt-1">${lvl.creator}</span></div>
-                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Tier Category</span><span class="text-slate-200 mt-1">${lvl.tier}</span></div>
-                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Length</span><span class="text-slate-200 mt-1">${lvl.length}</span></div>
-                <div class="flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder"><span class="text-xs uppercase font-bold text-slate-400 tracking-wider">Skillsets</span><span class="text-slate-200 mt-1">${lvl.skillset}</span></div>
-            `;
+            contentContainer.innerHTML = '';
+
+            // Render all information listed in the row, skipping blank elements and column A (index 0)
+            lvl.fullRowData.forEach((cellVal, idx) => {
+                if (idx === 0 || !cellVal) return; // skip column A and empty cells
+                let headerName = (sheetHeaders && sheetHeaders[idx]) ? sheetHeaders[idx] : `Column ${idx + 1}`;
+                
+                let rowDiv = document.createElement('div');
+                rowDiv.className = "flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder";
+                rowDiv.innerHTML = `
+                    <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">${headerName}</span>
+                    <span class="text-slate-200 mt-1">${cellVal}</span>
+                `;
+                contentContainer.appendChild(rowDiv);
+            });
 
             const modal = document.getElementById('info-modal');
             const backdrop = document.getElementById('modal-backdrop');
@@ -346,13 +352,13 @@
                 let count = section.levels.length;
                 let tierName = section.tier;
 
-                // Exactly match the sheet divider style: < NUMBER > | < TIER > wrapped in horizontal lines
+                // Format tier separator: number, pipe, bold tier name without <> brackets around tier
                 let divider = document.createElement('div');
                 divider.className = "flex items-center my-6 text-indigo-400/80 font-bold text-sm tracking-widest uppercase";
                 divider.innerHTML = `
                     <div class="flex-grow border-t border-indigo-500/20"></div>
                     <span class="mx-4 px-4 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 shadow-sm text-indigo-300 font-mono tracking-wider text-xs">
-                        &lt; ${count} &gt; | &lt; ${tierName.toUpperCase()} &gt;
+                        ${count} | <strong>${tierName}</strong>
                     </span>
                     <div class="flex-grow border-t border-indigo-500/20"></div>
                 `;
@@ -361,20 +367,21 @@
                 section.levels.forEach(lvl => {
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
+                    // Requested structure layout per tab row
                     tab.className = `border rounded-xl px-5 py-4 shadow-lg transition duration-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${colorClass}`;
 
                     let leftCol = document.createElement('div');
                     leftCol.className = "space-y-0.5";
                     leftCol.innerHTML = `
                         <div class="text-lg font-bold text-white tracking-wide">${lvl.name}</div>
-                        <div class="text-xs text-slate-400">by ${lvl.creator}</div>
+                        <div class="text-xs text-slate-400">${lvl.creator}</div>
                     `;
 
                     let specsCol = document.createElement('div');
-                    specsCol.className = "flex flex-wrap items-center gap-6 text-sm text-slate-300";
+                    specsCol.className = "flex flex-wrap items-center gap-8 text-sm text-slate-300";
                     specsCol.innerHTML = `
-                        <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Length</span><span class="font-medium text-slate-200">${lvl.length}</span></div>
-                        <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Skillsets</span><span class="font-medium text-slate-200">${lvl.skillset}</span></div>
+                        <div><span class="text-slate-200">${lvl.length}</span></div>
+                        <div><span class="text-slate-200">${lvl.skillset}</span></div>
                     `;
 
                     let rightAction = document.createElement('div');
