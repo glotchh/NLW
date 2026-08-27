@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NLW Extremes</title>
+    <title>Non-Listworthy Extreme Demons</title>
     <link rel="icon" type="image/png" href="nlw.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -48,10 +48,10 @@
 </head>
 <body class="bg-spacebg text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white relative">
 
-    <!-- Background YouTube Video Wrapper (Ends at 2:31 / 151s, Captions Off) -->
+    <!-- Background YouTube Video Wrapper (Ends at 2:31 / 151s, Captions Suppressed) -->
     <div id="bg-video-container">
         <iframe 
-            src="https://www.youtube.com/embed/B_qJCHfojjU?autoplay=1&mute=1&controls=0&loop=1&end=151&playlist=B_qJCHfojjU&disablekb=1&modestbranding=1&showinfo=0&cc_load_policy=3" 
+            src="https://www.youtube.com/embed/B_qJCHfojjU?autoplay=1&mute=1&controls=0&loop=1&end=151&playlist=B_qJCHfojjU&disablekb=1&modestbranding=1&showinfo=0&iv_load_policy=3&hl=en&cc_lang_pref=en&cc_load_policy=0" 
             title="Background Video" 
             frameborder="0" 
             allow="autoplay; encrypted-media">
@@ -469,7 +469,7 @@
                 emptyView.classList.add('hidden');
             }
 
-            // Fix grouping bug: consolidate all matched levels by tier name so tiers never split up
+            // Consolidate tiers to eliminate section splitting bug
             let tierMap = {};
             sectionsToRender.forEach(sec => {
                 if (!tierMap[sec.tier]) {
