@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Glotch's Extreme Demon Completions</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Papa Parse -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white">
+
+    <div class="max-w-7xl mx-auto px-4 py-10">
+        <!-- Header -->
+        <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-6 gap-4">
+            <div>
+                <h1 class="text-3xl font-black tracking-tight text-white flex items-center gap-2">
+                    <span class="text-indigo-400">⚡</span> Glotch's Extreme Demon Completions
+                </h1>
+                <p class="text-slate-400 mt-1">
+                    All GD extreme demons completed by <a href="https://youtube.com/@glotchh" target="_blank" class="text-indigo-400 hover:underline font-medium">Glotch ↗</a>
+                </p>
+            </div>
+            <div id="counter-badge" class="bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm">
+                Loading data...
+            </div>
+        </header>
+
+        <!-- Controls: Filters & Search -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Search Level</label>
+                <input id="search-box" type="text" placeholder="Filter by name, creator..." 
+                    class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Difficulty Filter</label>
+                <select id="filter-dropdown" 
+                    class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                    <option value="all">All Difficulties</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sort Options</label>
+                <select id="sort-dropdown" 
+                    class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                    <option value="default">Default Order</option>
+                    <option value="name-asc">Level Name (A - Z)</option>
+                    <option value="name-desc">Level Name (Z - A)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Loading View -->
+        <div id="loading-view" class="text-center py-24">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+            <p class="text-slate-400 font-medium">Parsing Google Sheets output...</p>
+        </div>
+
+        <!-- Empty State View -->
+        <div id="empty-view" class="hidden text-center py-20 bg-slate-900/50 border border-slate-800 rounded-2xl">
+            <p class="text-slate-400 text-lg">No completions matching your parameters found.</p>
+        </div>
+
+        <!-- Cards Display Grid -->
+        <div id="cards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5"></div>
+    </div>
+
+    <script>
+        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkS3uixPNrHp_nnr8dh2XENMuXvPF30vnVykoDDEySHWmdDpK7KZ8EPqZf-uaVA1oc1UgJr0hMKyDu/pub?output=csv';
+
+        let sheetData = [];
+        let headers = [];
+
+        Papa.parse(CSV_URL, {
+            download: true,
+            header: true,
+            skipEmptyLines: true,
+            complete: function(results) {
+                sheetData = results.data;
+                if (sheetData.length > 0) {
+                    headers = Object.keys(sheetData[0]);
+                }
+                initTracker();
+            },
+            error: function(err) {
+                console.error('CSV Parsing Error:', err);
+                document.getElementById('loading-view').innerHTML = `
+                    <p class="text-red-400 font-semibold">Failed to parse Google Sheets output. Make sure you are running via a local server or GitHub Pages.</p>
+                `;
+            }
+        });
+
+        function initTracker() {
+            document.getElementById('loading-view').classList.add('hidden');
+            populateFilterDropdown();
+            renderGrid(sheetData);
+
+            document.getElementById('search-box').addEventListener('input', applyFilters);
+            document.getElementById('filter-dropdown').addEventListener('change', applyFilters);
+            document.getElementById('sort-dropdown').addEventListener('change', applyFilters);
+        }
+
+        function populateFilterDropdown() {
+            const dropdown = document.getElementById('filter-dropdown');
+            let targetKey = headers.find(h => /difficulty|category|type/i.test(h)) || headers[1];
+            if (!targetKey) return;
+
+            let uniqueValues = [...new Set(sheetData.map(item => item[targetKey]))].filter(Boolean);
+            uniqueValues.forEach(val => {
+                let opt = document.createElement('option');
+                opt.value = val;
+                opt.textContent = val;
+                dropdown.appendChild(opt);
+            });
+        }
+
+        function applyFilters() {
+            const searchTerm = document.getElementById('search-box').value.toLowerCase();
+            const filterVal = document.getElementById('filter-dropdown').value;
+            const sortVal = document.getElementById('sort-dropdown').value;
+
+            let targetKey = headers.find(h => /difficulty|category|type/i.test(h)) || headers[1];
+            let nameKey = headers.find(h => /name|level|title/i.test(h)) || headers[0];
+
+            let filtered = sheetData.filter(item => {
+                let matchesSearch = Object.values(item).some(val => 
+                    String(val).toLowerCase().includes(searchTerm)
+                );
+                let matchesFilter = (filterVal === 'all') || (item[targetKey] === filterVal);
+                return matchesSearch && matchesFilter;
+            });
+
+            if (sortVal === 'name-asc') {
+                filtered.sort((a, b) => String(a[nameKey] || '').localeCompare(String(b[nameKey] || '')));
+            } else if (sortVal === 'name-desc') {
+                filtered.sort((a, b) => String(b[nameKey] || '').localeCompare(String(a[nameKey] || '')));
+            }
+
+            renderGrid(filtered);
+        }
+
+        function renderGrid(data) {
+            const container = document.getElementById('cards-container');
+            const emptyView = document.getElementById('empty-view');
+            const badge = document.getElementById('counter-badge');
+
+            badge.textContent = `${data.length} Completions Found`;
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                emptyView.classList.remove('hidden');
+                return;
+            } else {
+                emptyView.classList.add('hidden');
+            }
+
+            data.forEach(item => {
+                let card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl hover:border-indigo-500/50 transition flex flex-col justify-between";
+
+                let innerHtml = `<div class="space-y-2.5">`;
+                headers.forEach((header, index) => {
+                    let value = item[header];
+                    if (!value) return;
+
+                    if (index === 0) {
+                        innerHtml += `<h3 class="text-lg font-bold text-white tracking-wide truncate">${value}</h3>`;
+                    } else if (header.toLowerCase().includes('link') || String(value).startsWith('http')) {
+                        innerHtml += `<div class="pt-1"><a href="${value}" target="_blank" class="inline-flex items-center gap-1.5 text-xs font-semibold bg-indigo-600/10 text-indigo-400 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-lg transition">Watch Proof ↗</a></div>`;
+                    } else {
+                        innerHtml += `<div class="text-sm flex justify-between items-center"><span class="text-slate-400 text-xs uppercase tracking-wider">${header}</span> <span class="text-slate-200 font-medium truncate ml-2">${value}</span></div>`;
+                    }
+                });
+                innerHtml += `</div>`;
+
+                card.innerHTML = innerHtml;
+                container.appendChild(card);
+            });
+        }
+    </script>
+</body>
+</html>
