@@ -141,14 +141,16 @@
             }
         });
 
-        // Helper to extract YouTube link from cell hyperlink or raw cell text
-        function extractYouTubeLink(cellHtml, rowIdx, colIdx) {
-            // If parsed via standard CSV export, check if there's a URL in text or fallback
-            if (cellHtml && (cellHtml.includes('youtube.com') || cellHtml.includes('youtu.be'))) {
-                let match = cellHtml.match(/(https?:\/\/[^\s]+)/g);
-                if (match) return match[0];
+        // Helper to extract YouTube link embedded inside anchor tags / html / or plain text of column A
+        function extractYouTubeLinkFromCell(cellValue) {
+            if (!cellValue) return '';
+            // Check for standard URL matches
+            let match = cellValue.match(/(https?:\/\/[^\s"'<]+)/g);
+            if (match) {
+                let found = match.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
+                if (found) return found;
             }
-            return null;
+            return '';
         }
 
         function parseSheetLayout(rows) {
@@ -188,28 +190,19 @@
                     let nonEmpties = relevantCells.filter(c => c.length > 0);
 
                     if (nonEmpties.length >= 2) {
-                        // Extract YouTube link embedded in column A (index 0) or anywhere in the row
-                        let ytLink = null;
-                        for (let cellVal of rowStringArray) {
-                            if (cellVal && (cellVal.includes('youtube.com') || cellVal.includes('youtu.be'))) {
-                                let match = cellVal.match(/(https?:\/\/[^\s"']+)/);
-                                if (match) {
-                                    ytLink = match[0];
-                                    break;
-                                }
-                            }
-                        }
+                        // Extract showcase YouTube link from column A (index 0)
+                        let ytLink = extractYouTubeLinkFromCell(rowStringArray[0]);
 
-                        // Map standard indices based on standard layout (B: Name, C: Creator, D: Length, E: Skillsets, F+: Extra Info)
+                        // Map columns correctly: B (index 1) = Name, C (index 2) = Creator, D (index 3) = Length, E (index 4) = Skillsets, F (index 5) = Level ID, G (index 6) = Level Info
                         let levelObj = {
                             tier: currentTier,
                             name: rowStringArray[1] || nonEmpties[0] || 'Unknown Level',
                             creator: rowStringArray[2] || nonEmpties[1] || 'Unknown',
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
-                            levelId: rowStringArray[5] || '',
+                            levelId: rowStringArray[5] || '', // As highlighted in image 2 (correct level ID column)
                             levelInfo: rowStringArray[6] || '',
-                            showcase: ytLink || '',
+                            showcase: ytLink,
                             fullRowData: rowStringArray
                         };
                         currentLevels.push(levelObj);
@@ -314,12 +307,12 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // Format requested sidebar structure
+            // Clean, requested structure for sidebar details (ignoring redundant/irrelevant fields)
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
                 { label: 'Skillsets', value: lvl.skillset },
-                { label: 'Level Info', value: lvl.levelInfo || lvl.fullRowData[6] || 'None' },
+                { label: 'Level Info', value: lvl.levelInfo || 'None' },
                 { label: 'Level ID', value: lvl.levelId || 'N/A' },
                 { label: 'Showcase', value: lvl.showcase ? `<a href="${lvl.showcase}" target="_blank" class="text-indigo-400 hover:underline break-all">${lvl.showcase}</a>` : 'N/A' }
             ];
@@ -330,19 +323,6 @@
                 div.innerHTML = `
                     <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">${f.label}</div>
                     <div class="text-slate-200 font-medium">${f.value}</div>
-                `;
-                contentContainer.appendChild(div);
-            });
-
-            // Include any additional populated sheet attributes dynamically if present
-            lvl.fullRowData.forEach((cellVal, idx) => {
-                if (idx <= 6 || !cellVal) return; // skip cols A through G already handled or empty
-                let headerName = (sheetHeaders && sheetHeaders[idx]) ? sheetHeaders[idx] : `Extra Info ${idx}`;
-                let div = document.createElement('div');
-                div.className = "space-y-1 bg-slate-900/60 p-3.5 rounded-xl border border-spaceborder";
-                div.innerHTML = `
-                    <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">${headerName}</div>
-                    <div class="text-slate-200 font-medium">${cellVal}</div>
                 `;
                 contentContainer.appendChild(div);
             });
@@ -391,15 +371,15 @@
                 let count = section.levels.length;
                 let tierName = section.tier;
 
-                // Tier divider: number | bold tier name without <> brackets around tier name
+                // Separating tier name made larger (text-lg / text-xl) with bold tier name
                 let divider = document.createElement('div');
-                divider.className = "flex items-center my-6 text-indigo-400/80 font-bold text-sm tracking-widest uppercase";
+                divider.className = "flex items-center my-8 text-indigo-400 font-bold tracking-widest uppercase";
                 divider.innerHTML = `
-                    <div class="flex-grow border-t border-indigo-500/20"></div>
-                    <span class="mx-4 px-4 py-1.5 rounded-xl bg-indigo-950/60 border border-indigo-500/30 shadow-sm text-indigo-300 font-mono tracking-wider text-xs">
+                    <div class="flex-grow border-t border-indigo-500/30"></div>
+                    <span class="mx-6 px-6 py-2 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 shadow-md text-indigo-200 font-mono text-base md:text-lg">
                         ${count} | <strong>${tierName}</strong>
                     </span>
-                    <div class="flex-grow border-t border-indigo-500/20"></div>
+                    <div class="flex-grow border-t border-indigo-500/30"></div>
                 `;
                 container.appendChild(divider);
 
@@ -407,20 +387,20 @@
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     
-                    // GlotchedC card styling matching user specifications
-                    tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${colorClass}`;
+                    // Card layout with grid columns ensuring strict alignment for Length and Skillsets columns
+                    tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 ${colorClass}`;
 
-                    // Left Column: Level Name (bold) + Creator(s) underneath
+                    // Left Column (Name + Creator): Spans 5 columns to give plenty of space and prevent crowding
                     let leftCol = document.createElement('div');
-                    leftCol.className = "space-y-0.5";
+                    leftCol.className = "space-y-0.5 md:col-span-5";
                     leftCol.innerHTML = `
                         <div class="text-lg font-bold text-white tracking-wide">${lvl.name}</div>
                         <div class="text-xs text-slate-400">${lvl.creator}</div>
                     `;
 
-                    // Middle Column: Length & Skillsets labeled with small uppercase headers above values like GlotchedC style
+                    // Middle Column (Length & Skillsets aligned neatly into distinct strict columns)
                     let specsCol = document.createElement('div');
-                    specsCol.className = "flex flex-wrap items-center gap-10 text-sm text-slate-300";
+                    specsCol.className = "grid grid-cols-2 gap-4 md:col-span-5 text-sm text-slate-300";
                     specsCol.innerHTML = `
                         <div class="flex flex-col">
                             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Length</span>
@@ -432,9 +412,9 @@
                         </div>
                     `;
 
-                    // Right Column: Info Button
+                    // Right Column (Info button): Spans 2 columns, right aligned
                     let rightAction = document.createElement('div');
-                    rightAction.className = "flex items-center gap-2 self-end md:self-center";
+                    rightAction.className = "flex items-center justify-end md:col-span-2 self-end md:self-center";
 
                     let infoBtn = document.createElement('button');
                     infoBtn.className = "bg-slate-900 border border-spaceborder hover:border-indigo-500 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-md";
