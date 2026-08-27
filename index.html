@@ -48,10 +48,10 @@
 </head>
 <body class="bg-spacebg text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white relative">
 
-    <!-- Background YouTube Video Wrapper -->
+    <!-- Background YouTube Video Wrapper (Ends at 2:31 / 151s, Captions Off) -->
     <div id="bg-video-container">
         <iframe 
-            src="https://www.youtube.com/embed/B_qJCHfojjU?autoplay=1&mute=1&controls=0&loop=1&playlist=B_qJCHfojjU&disablekb=1&modestbranding=1&showinfo=0" 
+            src="https://www.youtube.com/embed/B_qJCHfojjU?autoplay=1&mute=1&controls=0&loop=1&end=151&playlist=B_qJCHfojjU&disablekb=1&modestbranding=1&showinfo=0&cc_load_policy=0" 
             title="Background Video" 
             frameborder="0" 
             allow="autoplay; encrypted-media">
@@ -60,7 +60,7 @@
     <!-- Dark overlay to ensure text readability over the video -->
     <div id="bg-overlay" class="fixed inset-0 bg-spacebg/85 backdrop-blur-[2px] z-[-5] transition-opacity duration-300"></div>
 
-    <!-- Narrower container matching list layout profiles (~max-w-4xl / 5xl) -->
+    <!-- Narrower container matching list layout profiles (~max-w-4xl) -->
     <div class="max-w-4xl mx-auto px-4 py-12 relative z-10">
         <!-- Header -->
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
@@ -469,9 +469,18 @@
                 emptyView.classList.add('hidden');
             }
 
-            sectionsToRender.forEach(section => {
-                let count = section.levels.length;
-                let tierName = section.tier;
+            // Fix grouping bug: consolidate all matched levels by tier name so tiers never split up
+            let tierMap = {};
+            sectionsToRender.forEach(sec => {
+                if (!tierMap[sec.tier]) {
+                    tierMap[sec.tier] = [];
+                }
+                tierMap[sec.tier].push(...sec.levels);
+            });
+
+            Object.keys(tierMap).forEach(tierName => {
+                let levels = tierMap[tierName];
+                let count = levels.length;
 
                 let divider = document.createElement('div');
                 divider.className = "flex items-center my-8 text-indigo-400 font-bold tracking-widest uppercase";
@@ -484,7 +493,7 @@
                 `;
                 container.appendChild(divider);
 
-                section.levels.forEach(lvl => {
+                levels.forEach(lvl => {
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     
@@ -499,7 +508,6 @@
 
                     let specsCol = document.createElement('div');
                     specsCol.className = "grid grid-cols-2 gap-4 md:col-span-6 text-sm text-slate-300";
-                    specsCol.specsCol = true;
                     specsCol.innerHTML = `
                         <div class="flex flex-col">
                             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Length</span>
