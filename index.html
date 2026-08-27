@@ -141,18 +141,15 @@
             }
         });
 
-        // Advanced extraction for Google Sheets CSV anchor/hyperlink formats in Column A
-        function extractYouTubeLinkFromCell(cellValue, rawRowArray, colIndex) {
-            // Check current cell or look at nearby cells if the link is embedded differently
+        // Fixed extractor checking the entire row array for YouTube links hidden in cell metadata/formulas
+        function extractYouTubeLinkFromCell(rawRowArray) {
             for (let i = 0; i < rawRowArray.length; i++) {
                 let val = String(rawRowArray[i] || '');
-                // Standard URL search
                 let match = val.match(/(https?:\/\/[^\s"'<()]+)/g);
                 if (match) {
                     let found = match.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
                     if (found) return found;
                 }
-                // Google Sheets CSV formula export format: =HYPERLINK("url","text")
                 let formulaMatch = val.match(/HYPERLINK\s*\(\s*"([^"]+)"/i);
                 if (formulaMatch && formulaMatch[1]) {
                     let url = formulaMatch[1];
@@ -199,7 +196,7 @@
                     let nonEmpties = relevantCells.filter(c => c.length > 0);
 
                     if (nonEmpties.length >= 2) {
-                        let ytLink = extractYouTubeLinkFromCell(rowStringArray[0], rowStringArray, 0);
+                        let ytLink = extractYouTubeLinkFromCell(rowStringArray);
 
                         let levelObj = {
                             tier: currentTier,
@@ -208,8 +205,8 @@
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
                             enjoyment: rowStringArray[5] || 'N/A',
-                            levelInfo: rowStringArray[6] || '', // Column G is Level Info text
-                            levelId: rowStringArray[7] || '',   // Column H is Level ID number string
+                            levelId: rowStringArray[6] || '',   // Column G is Level ID
+                            levelInfo: rowStringArray[7] || '', // Column H is Level Info text
                             showcase: ytLink,
                             fullRowData: rowStringArray
                         };
@@ -325,7 +322,7 @@
             if (t.includes('terrifying')) return 'border-rose-500/50 bg-rose-950/10 hover:border-rose-400';
             if (t.includes('catastrophic')) return 'border-amber-600/50 bg-amber-950/10 hover:border-amber-500';
             if (t.includes('inexorable')) return 'border-indigo-500/50 bg-indigo-950/10 hover:border-indigo-400';
-    g        if (t.includes('excruciating')) return 'border-violet-500/50 bg-violet-950/10 hover:border-violet-400';
+            if (t.includes('excruciating')) return 'border-violet-500/50 bg-violet-950/10 hover:border-violet-400';
             if (t.includes('merciless')) return 'border-red-700/50 bg-red-950/20 hover:border-red-500';
             return 'border-spaceborder bg-spacecard';
         }
@@ -335,14 +332,13 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // Fields matching accurate layout order: Level Info in Column G, Level ID in Column H
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
                 { label: 'Skillsets', value: lvl.skillset },
                 { label: 'Enjoyment', value: lvl.enjoyment },
-                { label: 'Level Info', value: lvl.levelInfo || 'None' },
                 { label: 'Level ID', value: lvl.levelId || 'N/A' },
+                { label: 'Level Info', value: lvl.levelInfo || 'None' },
                 { label: 'Showcase', value: lvl.showcase ? `<a href="${lvl.showcase}" target="_blank" class="text-indigo-400 hover:underline break-all font-semibold">Watch Showcase ↗</a>` : 'N/A' }
             ];
 
