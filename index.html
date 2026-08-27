@@ -141,19 +141,23 @@
             }
         });
 
-        // Robust extractor to catch hyperlinks hidden in Google Sheets CSV exports (e.g., HYPERLINK("url","label") or raw URLs)
-        function extractYouTubeLinkFromCell(cellValue) {
-            if (!cellValue) return '';
-            let match = cellValue.match(/(https?:\/\/[^\s"'<()]+)/g);
-            if (match) {
-                let found = match.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
-                if (found) return found;
-            }
-            // Check formula pattern like HYPERLINK("url","text")
-            let formulaMatch = cellValue.match(/HYPERLINK\s*\(\s*"([^"]+)"/i);
-            if (formulaMatch && formulaMatch[1]) {
-                let url = formulaMatch[1];
-                if (url.includes('youtube.com') || url.includes('youtu.be')) return url;
+        // Advanced extraction for Google Sheets CSV anchor/hyperlink formats in Column A
+        function extractYouTubeLinkFromCell(cellValue, rawRowArray, colIndex) {
+            // Check current cell or look at nearby cells if the link is embedded differently
+            for (let i = 0; i < rawRowArray.length; i++) {
+                let val = String(rawRowArray[i] || '');
+                // Standard URL search
+                let match = val.match(/(https?:\/\/[^\s"'<()]+)/g);
+                if (match) {
+                    let found = match.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
+                    if (found) return found;
+                }
+                // Google Sheets CSV formula export format: =HYPERLINK("url","text")
+                let formulaMatch = val.match(/HYPERLINK\s*\(\s*"([^"]+)"/i);
+                if (formulaMatch && formulaMatch[1]) {
+                    let url = formulaMatch[1];
+                    if (url.includes('youtube.com') || url.includes('youtu.be')) return url;
+                }
             }
             return '';
         }
@@ -195,7 +199,7 @@
                     let nonEmpties = relevantCells.filter(c => c.length > 0);
 
                     if (nonEmpties.length >= 2) {
-                        let ytLink = extractYouTubeLinkFromCell(rowStringArray[0]);
+                        let ytLink = extractYouTubeLinkFromCell(rowStringArray[0], rowStringArray, 0);
 
                         let levelObj = {
                             tier: currentTier,
@@ -204,8 +208,8 @@
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
                             enjoyment: rowStringArray[5] || 'N/A',
-                            levelId: rowStringArray[6] || '', // Corrected order: Column G is Level ID
-                            levelInfo: rowStringArray[7] || '', // Corrected order: Column H is Level Info
+                            levelInfo: rowStringArray[6] || '', // Column G is Level Info text
+                            levelId: rowStringArray[7] || '',   // Column H is Level ID number string
                             showcase: ytLink,
                             fullRowData: rowStringArray
                         };
@@ -251,7 +255,6 @@
             });
         }
 
-        // Helper to convert mm:ss format string into total seconds for proper numeric filtering range comparison
         function parseLengthToSeconds(lengthStr) {
             if (!lengthStr) return 0;
             let parts = lengthStr.trim().split(':');
@@ -284,13 +287,10 @@
                     if (lengthVal !== 'all') {
                         let totalSecs = parseLengthToSeconds(lvl.length);
                         if (lengthVal === 'medium') {
-                            // Medium: below 0:59 (< 59 seconds)
                             matchesLength = totalSecs < 59;
                         } else if (lengthVal === 'long') {
-                            // Long: between 1:00 and 1:59 (60 to 119 seconds)
                             matchesLength = totalSecs >= 60 && totalSecs <= 119;
                         } else if (lengthVal === 'xl') {
-                            // XL: above 2:00 (>= 120 seconds)
                             matchesLength = totalSecs >= 120;
                         }
                     }
@@ -325,7 +325,7 @@
             if (t.includes('terrifying')) return 'border-rose-500/50 bg-rose-950/10 hover:border-rose-400';
             if (t.includes('catastrophic')) return 'border-amber-600/50 bg-amber-950/10 hover:border-amber-500';
             if (t.includes('inexorable')) return 'border-indigo-500/50 bg-indigo-950/10 hover:border-indigo-400';
-            if (t.includes('excruciating')) return 'border-violet-500/50 bg-violet-950/10 hover:border-violet-400';
+    g        if (t.includes('excruciating')) return 'border-violet-500/50 bg-violet-950/10 hover:border-violet-400';
             if (t.includes('merciless')) return 'border-red-700/50 bg-red-950/20 hover:border-red-500';
             return 'border-spaceborder bg-spacecard';
         }
@@ -335,7 +335,7 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // Swapped Level ID and Level Info data fields correctly, and included Enjoyment & Showcase
+            // Fields matching accurate layout order: Level Info in Column G, Level ID in Column H
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
@@ -343,7 +343,7 @@
                 { label: 'Enjoyment', value: lvl.enjoyment },
                 { label: 'Level Info', value: lvl.levelInfo || 'None' },
                 { label: 'Level ID', value: lvl.levelId || 'N/A' },
-                { label: 'Showcase', value: lvl.showcase ? `<a href="${lvl.showcase}" target="_blank" class="text-indigo-400 hover:underline break-all">${lvl.showcase}</a>` : 'N/A' }
+                { label: 'Showcase', value: lvl.showcase ? `<a href="${lvl.showcase}" target="_blank" class="text-indigo-400 hover:underline break-all font-semibold">Watch Showcase ↗</a>` : 'N/A' }
             ];
 
             fields.forEach(f => {
@@ -400,7 +400,6 @@
                 let count = section.levels.length;
                 let tierName = section.tier;
 
-                // Larger, prominent separating tier name header
                 let divider = document.createElement('div');
                 divider.className = "flex items-center my-8 text-indigo-400 font-bold tracking-widest uppercase";
                 divider.innerHTML = `
@@ -416,10 +415,8 @@
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     
-                    // Card layout with grid configuration
                     tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 ${colorClass}`;
 
-                    // Left Column (Name + Creator)
                     let leftCol = document.createElement('div');
                     leftCol.className = "space-y-0.5 md:col-span-4";
                     leftCol.innerHTML = `
@@ -427,7 +424,6 @@
                         <div class="text-xs text-slate-400">${lvl.creator}</div>
                     `;
 
-                    // Middle Column (Length & Skillsets)
                     let specsCol = document.createElement('div');
                     specsCol.className = "grid grid-cols-2 gap-4 md:col-span-6 text-sm text-slate-300";
                     specsCol.innerHTML = `
@@ -441,7 +437,6 @@
                         </div>
                     `;
 
-                    // Right Column (Info Button)
                     let rightAction = document.createElement('div');
                     rightAction.className = "flex items-center justify-end md:col-span-2 self-end md:self-center";
 
