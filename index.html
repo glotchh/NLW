@@ -29,7 +29,7 @@
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                    Non-Listworthy Extreme Demons
+                    <Non-Listworthy Extreme Demons
                 </h1>
                 <p class="text-slate-400 mt-2 text-sm md:text-base">
                     <a href="https://docs.google.com/spreadsheets/d/1LZrrAxgA1XQbngwohoxjZmMUHvIuq49ee8TL4z-yQoE/edit?gid=0#gid=0" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet ↗</a>
@@ -141,10 +141,9 @@
             }
         });
 
-        // Helper to extract YouTube link embedded inside anchor tags / html / or plain text of column A
+        // Helper to extract YouTube link from column A's hidden link / markdown / HTML anchor tags
         function extractYouTubeLinkFromCell(cellValue) {
             if (!cellValue) return '';
-            // Check for standard URL matches
             let match = cellValue.match(/(https?:\/\/[^\s"'<]+)/g);
             if (match) {
                 let found = match.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
@@ -190,18 +189,26 @@
                     let nonEmpties = relevantCells.filter(c => c.length > 0);
 
                     if (nonEmpties.length >= 2) {
-                        // Extract showcase YouTube link from column A (index 0)
                         let ytLink = extractYouTubeLinkFromCell(rowStringArray[0]);
 
-                        // Map columns correctly: B (index 1) = Name, C (index 2) = Creator, D (index 3) = Length, E (index 4) = Skillsets, F (index 5) = Level ID, G (index 6) = Level Info
+                        // Map columns accurately based on actual row positioning:
+                        // Column A (Index 0): Icon/Showcase link
+                        // Column B (Index 1): Name
+                        // Column C (Index 2): Creator
+                        // Column D (Index 3): Length
+                        // Column E (Index 4): Skillsets
+                        // Column F (Index 5): Enjoyment rating (2-digit or numeric string)
+                        // Column G (Index 6): Level ID (long integer string, e.g. 767657)
+                        // Column H (Index 7): Level Info / Description
                         let levelObj = {
                             tier: currentTier,
                             name: rowStringArray[1] || nonEmpties[0] || 'Unknown Level',
                             creator: rowStringArray[2] || nonEmpties[1] || 'Unknown',
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
-                            levelId: rowStringArray[5] || '', // As highlighted in image 2 (correct level ID column)
-                            levelInfo: rowStringArray[6] || '',
+                            enjoyment: rowStringArray[5] || 'N/A',
+                            levelId: rowStringArray[6] || '', 
+                            levelInfo: rowStringArray[7] || '',
                             showcase: ytLink,
                             fullRowData: rowStringArray
                         };
@@ -307,11 +314,12 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // Clean, requested structure for sidebar details (ignoring redundant/irrelevant fields)
+            // Clean structure for sidebar details including Enjoyment under column F and correct Level ID under column G
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
                 { label: 'Skillsets', value: lvl.skillset },
+                { label: 'Enjoyment', value: lvl.enjoyment },
                 { label: 'Level Info', value: lvl.levelInfo || 'None' },
                 { label: 'Level ID', value: lvl.levelId || 'N/A' },
                 { label: 'Showcase', value: lvl.showcase ? `<a href="${lvl.showcase}" target="_blank" class="text-indigo-400 hover:underline break-all">${lvl.showcase}</a>` : 'N/A' }
@@ -371,7 +379,7 @@
                 let count = section.levels.length;
                 let tierName = section.tier;
 
-                // Separating tier name made larger (text-lg / text-xl) with bold tier name
+                // Larger, prominent separating tier name header
                 let divider = document.createElement('div');
                 divider.className = "flex items-center my-8 text-indigo-400 font-bold tracking-widest uppercase";
                 divider.innerHTML = `
@@ -387,20 +395,20 @@
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     
-                    // Card layout with grid columns ensuring strict alignment for Length and Skillsets columns
+                    // Grid card configuration ensuring strict alignment columns with compact spacing for Name
                     tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 ${colorClass}`;
 
-                    // Left Column (Name + Creator): Spans 5 columns to give plenty of space and prevent crowding
+                    // Left Column (Name + Creator): Spans 4 columns for close grouping
                     let leftCol = document.createElement('div');
-                    leftCol.className = "space-y-0.5 md:col-span-5";
+                    leftCol.className = "space-y-0.5 md:col-span-4";
                     leftCol.innerHTML = `
                         <div class="text-lg font-bold text-white tracking-wide">${lvl.name}</div>
                         <div class="text-xs text-slate-400">${lvl.creator}</div>
                     `;
 
-                    // Middle Column (Length & Skillsets aligned neatly into distinct strict columns)
+                    // Middle Column (Length & Skillsets properly aligned into column sections, leaving wider space)
                     let specsCol = document.createElement('div');
-                    specsCol.className = "grid grid-cols-2 gap-4 md:col-span-5 text-sm text-slate-300";
+                    specsCol.className = "grid grid-cols-2 gap-4 md:col-span-6 text-sm text-slate-300";
                     specsCol.innerHTML = `
                         <div class="flex flex-col">
                             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Length</span>
@@ -412,7 +420,7 @@
                         </div>
                     `;
 
-                    // Right Column (Info button): Spans 2 columns, right aligned
+                    // Right Column (Info Button): Spans 2 columns, right aligned
                     let rightAction = document.createElement('div');
                     rightAction.className = "flex items-center justify-end md:col-span-2 self-end md:self-center";
 
