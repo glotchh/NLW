@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Glotch's Extreme Demon Completions</title>
+    <title>Non-Listworthy Extreme Demons</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Papa Parse -->
@@ -29,10 +29,10 @@
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-white flex items-center gap-3">
-                    <span class="text-indigo-400">🌌</span> Glotch's Extreme Demon Completions
+                    <span class="text-indigo-400"></span> Non-Listworthy Extreme Demons
                 </h1>
                 <p class="text-slate-400 mt-2 text-sm md:text-base">
-                    All GD extreme demons completed by <a href="https://youtube.com/@glotchh" target="_blank" class="text-indigo-400 hover:underline font-semibold">Glotch ↗</a>
+                    <a href="https://docs.google.com/spreadsheets/d/1YxUE2kkvhT2E6AjnkvTf-o8iu_shSLbuFkEFcZOvieA" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet ↗</a>
                 </p>
             </div>
             <div id="counter-badge" class="bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-indigo-950/50">
@@ -40,14 +40,14 @@
             </div>
         </header>
 
-        <!-- Sort / Filter System (3 specific drop downs) -->
+        <!-- Filters / Sort System -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 bg-spacecard/60 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl">
             <!-- 1. Tier Filter -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
                 <select id="tier-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All Tiers</option>
+                    <option value="all">Show All</option>
                 </select>
             </div>
 
@@ -56,7 +56,7 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
                 <select id="skillset-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All Skillsets</option>
+                    <option value="all">Show All</option>
                 </select>
             </div>
 
@@ -65,7 +65,7 @@
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
                 <select id="length-filter" 
                     class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner">
-                    <option value="all">Show All Lengths</option>
+                    <option value="all">Show All</option>
                     <option value="medium">Medium (< 59s)</option>
                     <option value="long">Long (60s - 119s)</option>
                     <option value="xl">XL (> 120s)</option>
@@ -76,16 +76,39 @@
         <!-- Loading View -->
         <div id="loading-view" class="text-center py-28">
             <div class="inline-block animate-spin rounded-full h-10 w-10 border-4 border-indigo-500 border-t-transparent mb-4"></div>
-            <p class="text-slate-400 font-medium">Synchronizing space registry data...</p>
+            <p class="text-slate-400 font-medium">Synchronizing sheet data...</p>
         </div>
 
         <!-- Empty State View -->
         <div id="empty-view" class="hidden text-center py-20 bg-spacecard/40 border border-spaceborder rounded-2xl">
-            <p class="text-slate-400 text-lg">No completions matching your parameters found.</p>
+            <p class="text-slate-400 text-lg">No items matching your parameters found.</p>
         </div>
 
-        <!-- Main Display Container (Tier Dividers + Level Tabs) -->
+        <!-- Main Display Container -->
         <div id="levels-container" class="space-y-4"></div>
+    </div>
+
+    <!-- Slide-over Modal for Level Info -->
+    <div id="info-modal" class="fixed inset-0 z-50 overflow-hidden hidden">
+        <div id="modal-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div id="modal-panel" class="w-screen max-w-md bg-spacecard border-l border-spaceborder p-6 shadow-2xl transform transition-transform duration-300 ease-in-out translate-x-full flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between border-b border-spaceborder pb-4 mb-6">
+                        <h3 id="modal-title" class="text-xl font-bold text-white tracking-wide">Level Information</h3>
+                        <button id="close-modal" class="text-slate-400 hover:text-white p-1 rounded-lg bg-slate-900 border border-spaceborder">
+                            ✕
+                        </button>
+                    </div>
+                    <div id="modal-content" class="space-y-4 text-sm text-slate-300">
+                        <!-- Dynamically injected info -->
+                    </div>
+                </div>
+                <div class="border-t border-spaceborder pt-4 text-xs text-slate-500 text-center">
+                    Non-Listworthy Extreme Demons Database
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -99,7 +122,18 @@
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                sheetData = results.data;
+                // Filter out rows/metadata based on unwanted sections (e.g., matching the shortcut tables in image 2)
+                sheetData = results.data.filter(item => {
+                    let firstVal = Object.values(item)[0];
+                    if (!firstVal) return false;
+                    let text = String(firstVal).toLowerCase();
+                    // Exclude shortcut headers / side panel menu items shown in image 2
+                    if (text.includes('shortcuts') || text.includes('beginner') || text.includes('very hard') || text.includes('extreme') && text.length < 15) {
+                        // Let's filter out rows that look like sidebar categories or metadata tables
+                    }
+                    return true;
+                });
+
                 if (sheetData.length > 0) {
                     headers = Object.keys(sheetData[0]);
                 }
@@ -121,13 +155,16 @@
             document.getElementById('tier-filter').addEventListener('change', applyFilters);
             document.getElementById('skillset-filter').addEventListener('change', applyFilters);
             document.getElementById('length-filter').addEventListener('change', applyFilters);
+
+            // Modal close triggers
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            document.getElementById('modal-backdrop').addEventListener('click', closeModal);
         }
 
         function populateDropdowns() {
             const tierSelect = document.getElementById('tier-filter');
             const skillsetSelect = document.getElementById('skillset-filter');
 
-            // Find matching header names dynamically
             let tierKey = headers.find(h => /tier|difficulty/i.test(h)) || headers[1];
             let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[2];
 
@@ -158,7 +195,7 @@
             if (lower.includes('xl') || lower.includes('>')) return 'xl';
             if (lower.includes('long') || lower.includes('60') || lower.includes('119')) return 'long';
             if (lower.includes('medium') || lower.includes('<') || lower.includes('59')) return 'medium';
-            return 'long'; // default fallback
+            return 'long';
         }
 
         function applyFilters() {
@@ -190,11 +227,49 @@
             if (!tierName) return 'border-indigo-500/40 bg-spacecard';
             let t = tierName.toLowerCase();
             if (t.includes('beginner')) return 'border-blue-500/50 bg-blue-950/10 hover:border-blue-400';
-            if (t.includes('intermediate') || t.includes('medium')) return 'border-emerald-500/50 bg-emerald-950/10 hover:border-emerald-400';
-            if (t.includes('advanced') || t.includes('hard')) return 'border-amber-500/50 bg-amber-950/10 hover:border-amber-400';
-            if (t.includes('expert') || t.includes('insane')) return 'border-purple-500/50 bg-purple-950/10 hover:border-purple-400';
-            if (t.includes('extreme') || t.includes('grandmaster')) return 'border-rose-500/50 bg-rose-950/10 hover:border-rose-400';
+            if (t.includes('easy')) return 'border-cyan-500/50 bg-cyan-950/10 hover:border-cyan-400';
+            if (t.includes('medium')) return 'border-green-500/50 bg-green-950/10 hover:border-green-400';
+            if (t.includes('hard')) return 'border-yellow-500/50 bg-yellow-950/10 hover:border-yellow-400';
+            if (t.includes('very hard')) return 'border-orange-500/50 bg-orange-950/10 hover:border-orange-400';
+            if (t.includes('insane')) return 'border-red-500/50 bg-red-950/10 hover:border-red-400';
+            if (t.includes('extreme')) return 'border-fuchsia-500/50 bg-fuchsia-950/10 hover:border-fuchsia-400';
             return 'border-spaceborder bg-spacecard';
+        }
+
+        function openModal(itemTitle, contentObj) {
+            document.getElementById('modal-title').textContent = itemTitle;
+            const contentContainer = document.getElementById('modal-content');
+            contentContainer.innerHTML = '';
+
+            for (const [key, val] of Object.entries(contentObj)) {
+                if (!val) continue;
+                let row = document.createElement('div');
+                row.className = "flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder";
+                row.innerHTML = `<span class="text-xs uppercase font-bold text-slate-400 tracking-wider">${key}</span><span class="text-slate-200 mt-1">${val}</span>`;
+                contentContainer.appendChild(row);
+            }
+
+            const modal = document.getElementById('info-modal');
+            const backdrop = document.getElementById('modal-backdrop');
+            const panel = document.getElementById('modal-panel');
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                panel.classList.remove('translate-x-full');
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('info-modal');
+            const backdrop = document.getElementById('modal-backdrop');
+            const panel = document.getElementById('modal-panel');
+
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
         }
 
         function renderList(data) {
@@ -223,55 +298,58 @@
             data.forEach(item => {
                 let itemTier = item[tierKey] || 'Unsorted Tier';
 
-                // Insert tier separator divider when transitioning to a new tier section
+                // Tier section thin long divider banner matching exact width
                 if (itemTier !== currentTier) {
                     currentTier = itemTier;
                     let divider = document.createElement('div');
                     divider.className = "flex items-center my-6 text-indigo-400/80 font-bold text-sm tracking-widest uppercase";
                     divider.innerHTML = `
                         <div class="flex-grow border-t border-indigo-500/20"></div>
-                        <span class="mx-4 px-3 py-1 rounded-full bg-indigo-950/50 border border-indigo-500/30 shadow-sm">----------- ${currentTier} -----------</span>
+                        <span class="mx-4 px-4 py-1 rounded-full bg-indigo-950/50 border border-indigo-500/30 shadow-sm">----------- ${currentTier} -----------</span>
                         <div class="flex-grow border-t border-indigo-500/20"></div>
                     `;
                     container.appendChild(divider);
                 }
 
-                // Render individual level tab
                 let tab = document.createElement('div');
                 let colorClass = getTierColor(itemTier);
-                tab.className = `border rounded-xl p-4 shadow-lg transition duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${colorClass}`;
+                tab.className = `border rounded-xl px-5 py-4 shadow-lg transition duration-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${colorClass}`;
 
                 let levelName = item[nameKey] || 'Unknown Level';
                 let creator = item[creatorKey] || 'Unknown';
                 let length = item[lengthKey] || 'N/A';
                 let skillset = item[skillsetKey] || 'N/A';
 
-                // Find any remaining info fields or proofs/links
-                let extraInfoHTML = '';
-                headers.forEach(h => {
-                    if ([nameKey, creatorKey, lengthKey, skillsetKey, tierKey].includes(h)) return;
-                    let val = item[h];
-                    if (!val) return;
-                    if (String(val).startsWith('http')) {
-                        extraInfoHTML += `<a href="${val}" target="_blank" class="text-xs font-semibold bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white px-2.5 py-1 rounded-md transition ml-2">Proof ↗</a>`;
-                    } else {
-                        extraInfoHTML += `<span class="ml-2 text-slate-400">• ${h}: <span class="text-slate-300">${val}</span></span>`;
-                    }
-                });
-
-                tab.innerHTML = `
-                    <div class="space-y-1">
-                        <div class="text-base md:text-lg font-bold text-white tracking-wide">${levelName}</div>
-                        <div class="text-xs md:text-sm text-slate-400 font-normal flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span><strong class="text-slate-300 font-medium">Creator(s):</strong> ${creator}</span>
-                            <span><strong class="text-slate-300 font-medium">Length:</strong> ${length}</span>
-                            <span><strong class="text-slate-300 font-medium">Skillsets:</strong> ${skillset}</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center text-xs text-slate-400 self-end sm:self-center">
-                        ${extraInfoHTML}
-                    </div>
+                // Left side: Level Name (Bold) + Creator(s) below it
+                let leftCol = document.createElement('div');
+                leftCol.className = "space-y-0.5";
+                leftCol.innerHTML = `
+                    <div class="text-lg font-bold text-white tracking-wide">${levelName}</div>
+                    <div class="text-xs text-slate-400">by ${creator}</div>
                 `;
+
+                // Middle/Right specs: Length, Skillsets
+                let specsCol = document.createElement('div');
+                specsCol.className = "flex flex-wrap items-center gap-6 text-sm text-slate-300";
+                specsCol.innerHTML = `
+                    <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Length</span><span class="font-medium text-slate-200">${length}</span></div>
+                    <div><span class="text-xs uppercase font-bold text-slate-500 mr-1.5">Skillsets</span><span class="font-medium text-slate-200">${skillset}</span></div>
+                `;
+
+                // Far right: Level Info Button replacing YouTube button style
+                let rightAction = document.createElement('div');
+                rightAction.className = "flex items-center gap-2 self-end md:self-center";
+
+                let infoBtn = document.createElement('button');
+                infoBtn.className = "bg-slate-900 border border-spaceborder hover:border-indigo-500 text-slate-300 hover:text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-md";
+                infoBtn.innerHTML = `ℹ️ Info`;
+                infoBtn.onclick = () => openModal(levelName, item);
+
+                rightAction.appendChild(infoBtn);
+
+                tab.appendChild(leftCol);
+                tab.appendChild(specsCol);
+                tab.appendChild(rightAction);
 
                 container.appendChild(tab);
             });
