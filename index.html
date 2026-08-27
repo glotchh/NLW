@@ -39,9 +39,9 @@
             top: 50%;
             left: 50%;
             width: 100vw;
-            height: 56.25vw; /* 16:9 aspect ratio */
+            height: 56.25vw;
             min-height: 100vh;
-            min-width: 177.77vh; /* 16:9 aspect ratio */
+            min-width: 177.77vh;
             transform: translate(-50%, -50%);
         }
     </style>
@@ -60,7 +60,8 @@
     <!-- Dark overlay to ensure text readability over the video -->
     <div id="bg-overlay" class="fixed inset-0 bg-spacebg/85 backdrop-blur-[2px] z-[-5] transition-opacity duration-300"></div>
 
-    <div class="max-w-7xl mx-auto px-4 py-12 relative z-10">
+    <!-- Narrower container matching list layout profiles (~max-w-4xl / 5xl) -->
+    <div class="max-w-4xl mx-auto px-4 py-12 relative z-10">
         <!-- Header -->
         <header class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center border-b border-spaceborder pb-6 gap-4">
             <div>
@@ -348,7 +349,6 @@
                 }
 
                 let matchedLevels = section.levels.filter(lvl => {
-                    // Search Query match (Level Name or Creator)
                     let matchesSearch = true;
                     if (searchVal !== '') {
                         let nameMatch = lvl.name.toLowerCase().includes(searchVal);
@@ -410,7 +410,6 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // Swapped Level Info & Level ID names, Showcase removed entirely
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
@@ -500,6 +499,7 @@
 
                     let specsCol = document.createElement('div');
                     specsCol.className = "grid grid-cols-2 gap-4 md:col-span-6 text-sm text-slate-300";
+                    specsCol.specsCol = true;
                     specsCol.innerHTML = `
                         <div class="flex flex-col">
                             <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Length</span>
