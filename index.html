@@ -42,7 +42,6 @@
 
         <!-- Filters Section -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10 bg-spacecard/60 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl">
-            <!-- 1. Tier Filter -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
                 <select id="tier-filter" 
@@ -51,7 +50,6 @@
                 </select>
             </div>
 
-            <!-- 2. Skillset Filter -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
                 <select id="skillset-filter" 
@@ -60,7 +58,6 @@
                 </select>
             </div>
 
-            <!-- 3. Length Filter -->
             <div>
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
                 <select id="length-filter" 
@@ -92,7 +89,7 @@
     <div id="info-modal" class="fixed inset-0 z-50 overflow-hidden hidden">
         <div id="modal-backdrop" class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity opacity-0"></div>
         <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
-            <div id="modal-panel" class="w-screen max-w-md bg-spacecard border-l border-spaceborder p-6 shadow-2xl transform transition-transform duration-300 ease-in-out translate-x-full flex flex-col justify-between">
+            <div id="modal-panel" class="w-screen max-w-md bg-spacecard border-l border-spaceborder p-6 shadow-2xl transform transition-transform duration-300 ease-in-out translate-x-full flex flex-col justify-between overflow-y-auto">
                 <div>
                     <div class="flex items-center justify-between border-b border-spaceborder pb-4 mb-6">
                         <h3 id="modal-title" class="text-xl font-bold text-white tracking-wide">Level Details</h3>
@@ -100,9 +97,9 @@
                             ✕
                         </button>
                     </div>
-                    <div id="modal-content" class="space-y-4 text-sm text-slate-300"></div>
+                    <div id="modal-content" class="space-y-6 text-sm text-slate-300"></div>
                 </div>
-                <div class="border-t border-spaceborder pt-4 text-xs text-slate-500 text-center">
+                <div class="border-t border-spaceborder pt-4 text-xs text-slate-500 text-center mt-6">
                     Non-Listworthy Extreme Demons Database
                 </div>
             </div>
@@ -125,12 +122,14 @@
 
         let structuredSections = []; 
         let sheetHeaders = [];
+        let rawCsvRows = [];
 
         Papa.parse(CSV_URL, {
             download: true,
             header: false,
             skipEmptyLines: false,
             complete: function(results) {
+                rawCsvRows = results.data;
                 parseSheetLayout(results.data);
                 initApp();
             },
@@ -142,6 +141,16 @@
             }
         });
 
+        // Helper to extract YouTube link from cell hyperlink or raw cell text
+        function extractYouTubeLink(cellHtml, rowIdx, colIdx) {
+            // If parsed via standard CSV export, check if there's a URL in text or fallback
+            if (cellHtml && (cellHtml.includes('youtube.com') || cellHtml.includes('youtu.be'))) {
+                let match = cellHtml.match(/(https?:\/\/[^\s]+)/g);
+                if (match) return match[0];
+            }
+            return null;
+        }
+
         function parseSheetLayout(rows) {
             structuredSections = [];
             let currentTier = null;
@@ -151,12 +160,10 @@
                 let rowStringArray = row.map(cell => String(cell || '').trim());
                 let joinedRowText = rowStringArray.join(' ').toLowerCase();
 
-                // Capture header row if it contains names like level, creator, etc.
-                if (rowIndex === 0 || joinedRowText.includes('level') && joinedRowText.includes('creator')) {
+                if (rowIndex === 0 || (joinedRowText.includes('level') && joinedRowText.includes('creator'))) {
                     sheetHeaders = rowStringArray;
                 }
 
-                // Ignore irrelevant tiers
                 if (joinedRowText.includes('shortcuts') || joinedRowText.includes('more levels') || joinedRowText.includes('fuck')) {
                     return;
                 }
@@ -177,20 +184,33 @@
                     currentTier = matchedTier;
                     currentLevels = [];
                 } else if (currentTier) {
-                    // Ignore column A (index 0) per requirement: "IGNORE THE A COLUMN IT IS USELESS"
-                    // We look at columns starting from index 1 onwards
                     let relevantCells = rowStringArray.slice(1);
                     let nonEmpties = relevantCells.filter(c => c.length > 0);
 
                     if (nonEmpties.length >= 2) {
-                        // Map properties robustly from columns B onwards (Index 1 = Level Name, Index 2 = Creator, etc.)
+                        // Extract YouTube link embedded in column A (index 0) or anywhere in the row
+                        let ytLink = null;
+                        for (let cellVal of rowStringArray) {
+                            if (cellVal && (cellVal.includes('youtube.com') || cellVal.includes('youtu.be'))) {
+                                let match = cellVal.match(/(https?:\/\/[^\s"']+)/);
+                                if (match) {
+                                    ytLink = match[0];
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Map standard indices based on standard layout (B: Name, C: Creator, D: Length, E: Skillsets, F+: Extra Info)
                         let levelObj = {
                             tier: currentTier,
                             name: rowStringArray[1] || nonEmpties[0] || 'Unknown Level',
                             creator: rowStringArray[2] || nonEmpties[1] || 'Unknown',
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
-                            fullRowData: rowStringArray // preserves everything for the modal popup
+                            levelId: rowStringArray[5] || '',
+                            levelInfo: rowStringArray[6] || '',
+                            showcase: ytLink || '',
+                            fullRowData: rowStringArray
                         };
                         currentLevels.push(levelObj);
                     }
@@ -294,18 +314,37 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
-            // Render all information listed in the row, skipping blank elements and column A (index 0)
-            lvl.fullRowData.forEach((cellVal, idx) => {
-                if (idx === 0 || !cellVal) return; // skip column A and empty cells
-                let headerName = (sheetHeaders && sheetHeaders[idx]) ? sheetHeaders[idx] : `Column ${idx + 1}`;
-                
-                let rowDiv = document.createElement('div');
-                rowDiv.className = "flex flex-col bg-slate-900/60 p-3 rounded-xl border border-spaceborder";
-                rowDiv.innerHTML = `
-                    <span class="text-xs uppercase font-bold text-slate-400 tracking-wider">${headerName}</span>
-                    <span class="text-slate-200 mt-1">${cellVal}</span>
+            // Format requested sidebar structure
+            const fields = [
+                { label: 'Creator(s)', value: lvl.creator },
+                { label: 'Length', value: lvl.length },
+                { label: 'Skillsets', value: lvl.skillset },
+                { label: 'Level Info', value: lvl.levelInfo || lvl.fullRowData[6] || 'None' },
+                { label: 'Level ID', value: lvl.levelId || 'N/A' },
+                { label: 'Showcase', value: lvl.showcase ? `<a href="${lvl.showcase}" target="_blank" class="text-indigo-400 hover:underline break-all">${lvl.showcase}</a>` : 'N/A' }
+            ];
+
+            fields.forEach(f => {
+                let div = document.createElement('div');
+                div.className = "space-y-1 bg-slate-900/60 p-3.5 rounded-xl border border-spaceborder";
+                div.innerHTML = `
+                    <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">${f.label}</div>
+                    <div class="text-slate-200 font-medium">${f.value}</div>
                 `;
-                contentContainer.appendChild(rowDiv);
+                contentContainer.appendChild(div);
+            });
+
+            // Include any additional populated sheet attributes dynamically if present
+            lvl.fullRowData.forEach((cellVal, idx) => {
+                if (idx <= 6 || !cellVal) return; // skip cols A through G already handled or empty
+                let headerName = (sheetHeaders && sheetHeaders[idx]) ? sheetHeaders[idx] : `Extra Info ${idx}`;
+                let div = document.createElement('div');
+                div.className = "space-y-1 bg-slate-900/60 p-3.5 rounded-xl border border-spaceborder";
+                div.innerHTML = `
+                    <div class="text-xs uppercase font-extrabold text-slate-400 tracking-wider">${headerName}</div>
+                    <div class="text-slate-200 font-medium">${cellVal}</div>
+                `;
+                contentContainer.appendChild(div);
             });
 
             const modal = document.getElementById('info-modal');
@@ -352,7 +391,7 @@
                 let count = section.levels.length;
                 let tierName = section.tier;
 
-                // Format tier separator: number, pipe, bold tier name without <> brackets around tier
+                // Tier divider: number | bold tier name without <> brackets around tier name
                 let divider = document.createElement('div');
                 divider.className = "flex items-center my-6 text-indigo-400/80 font-bold text-sm tracking-widest uppercase";
                 divider.innerHTML = `
@@ -367,9 +406,11 @@
                 section.levels.forEach(lvl => {
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
-                    // Requested structure layout per tab row
-                    tab.className = `border rounded-xl px-5 py-4 shadow-lg transition duration-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${colorClass}`;
+                    
+                    // GlotchedC card styling matching user specifications
+                    tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${colorClass}`;
 
+                    // Left Column: Level Name (bold) + Creator(s) underneath
                     let leftCol = document.createElement('div');
                     leftCol.className = "space-y-0.5";
                     leftCol.innerHTML = `
@@ -377,13 +418,21 @@
                         <div class="text-xs text-slate-400">${lvl.creator}</div>
                     `;
 
+                    // Middle Column: Length & Skillsets labeled with small uppercase headers above values like GlotchedC style
                     let specsCol = document.createElement('div');
-                    specsCol.className = "flex flex-wrap items-center gap-8 text-sm text-slate-300";
+                    specsCol.className = "flex flex-wrap items-center gap-10 text-sm text-slate-300";
                     specsCol.innerHTML = `
-                        <div><span class="text-slate-200">${lvl.length}</span></div>
-                        <div><span class="text-slate-200">${lvl.skillset}</span></div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Length</span>
+                            <span class="font-medium text-slate-200 mt-0.5">${lvl.length}</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Skillsets</span>
+                            <span class="font-medium text-slate-200 mt-0.5">${lvl.skillset}</span>
+                        </div>
                     `;
 
+                    // Right Column: Info Button
                     let rightAction = document.createElement('div');
                     rightAction.className = "flex items-center gap-2 self-end md:self-center";
 
