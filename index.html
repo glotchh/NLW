@@ -9,6 +9,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Papa Parse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <!-- YouTube IFrame API -->
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -34,7 +36,7 @@
             overflow: hidden;
             pointer-events: none;
         }
-        #bg-video-container iframe {
+        #bg-video-container #yt-bg-player {
             position: absolute;
             top: 50%;
             left: 50%;
@@ -48,14 +50,9 @@
 </head>
 <body class="bg-spacebg text-slate-100 min-h-screen font-sans selection:bg-indigo-500 selection:text-white relative">
 
-    <!-- Background YouTube Video Wrapper (Ends at 2:31 / 151s, Captions Suppressed) -->
+    <!-- Background YouTube Video Container Managed via API -->
     <div id="bg-video-container">
-        <iframe 
-            src="https://www.youtube.com/embed/B_qJCHfojjU?autoplay=1&mute=1&controls=0&loop=1&end=151&playlist=B_qJCHfojjU&disablekb=1&modestbranding=1&showinfo=0&iv_load_policy=3&hl=en&cc_lang_pref=en&cc_load_policy=0" 
-            title="Background Video" 
-            frameborder="0" 
-            allow="autoplay; encrypted-media">
-        </iframe>
+        <div id="yt-bg-player"></div>
     </div>
     <!-- Dark overlay to ensure text readability over the video -->
     <div id="bg-overlay" class="fixed inset-0 bg-spacebg/85 backdrop-blur-[2px] z-[-5] transition-opacity duration-300"></div>
@@ -174,6 +171,51 @@
     </div>
 
     <script>
+        // YouTube API Player Initialization
+        let player;
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('yt-bg-player', {
+                videoId: 'B_qJCHfojjU',
+                playerVars: {
+                    autoplay: 1,
+                    mute: 1,
+                    controls: 0,
+                    loop: 1,
+                    playlist: 'B_qJCHfojjU',
+                    disablekb: 1,
+                    modestbranding: 1,
+                    showinfo: 0,
+                    iv_load_policy: 3,
+                    cc_load_policy: 0
+                },
+                events: {
+                    'onReady': (event) => {
+                        event.target.mute();
+                        event.target.playVideo();
+                        // Guarantee captions are forcibly unloaded/disabled via API model
+                        if (typeof event.target.unloadModule === 'function') {
+                            event.target.unloadModule('captions');
+                        }
+                    },
+                    'onStateChange': (event) => {
+                        // Loop / Cut off precisely at 2:31 (151 seconds)
+                        if (event.data === YT.PlayerState.PLAYING) {
+                            if (typeof event.target.unloadModule === 'function') {
+                                event.target.unloadModule('captions');
+                            }
+                            let checkInterval = setInterval(() => {
+                                if (player && typeof player.getCurrentTime === 'function') {
+                                    if (player.getCurrentTime() >= 151) {
+                                        player.seekTo(0);
+                                    }
+                                }
+                            }, 500);
+                        }
+                    }
+                }
+            });
+        }
+
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkS3uixPNrHp_nnr8dh2XENMuXvPF30vnVykoDDEySHWmdDpK7KZ8EPqZf-uaVA1oc1UgJr0hMKyDu/pub?output=csv';
 
         const VALID_TIERS = [
@@ -293,12 +335,14 @@
                     bgOverlay.classList.add('bg-spacebg/85');
                     toggleBtn.classList.remove('text-slate-600', 'border-slate-800');
                     toggleBtn.classList.add('text-slate-300', 'border-spaceborder');
+                    if (player && typeof player.playVideo === 'function') player.playVideo();
                 } else {
                     bgContainer.style.display = 'none';
                     bgOverlay.classList.remove('bg-spacebg/85');
                     bgOverlay.classList.add('bg-spacebg');
                     toggleBtn.classList.remove('text-slate-300', 'border-spaceborder');
                     toggleBtn.classList.add('text-slate-600', 'border-slate-800');
+                    if (player && typeof player.pauseVideo === 'function') player.pauseVideo();
                 }
             });
         }
