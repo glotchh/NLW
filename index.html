@@ -32,7 +32,7 @@
                     Non-Listworthy Extreme Demons
                 </h1>
                 <p class="text-slate-400 mt-2 text-sm md:text-base">
-                    <a href="https://docs.google.com/spreadsheets/d/1LZrrAxgA1XQbngwohoxjZmMUHvIuq49ee8TL4z-yQoE/edit?gid=0#gid=0" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet ↗</a>
+                    <a href="https://docs.google.com/spreadsheets/d/1YxUE2kkvhT2E6AjnkvTf-o8iu_shSLbuFkEFcZOvieA/" target="_blank" class="text-indigo-400 hover:underline font-semibold">Original Sheet</a>
                 </p>
             </div>
             <div id="counter-badge" class="bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 font-semibold px-4 py-2 rounded-xl text-sm shadow-lg shadow-indigo-950/50">
@@ -141,24 +141,6 @@
             }
         });
 
-        // Fixed extractor checking the entire row array for YouTube links hidden in cell metadata/formulas
-        function extractYouTubeLinkFromCell(rawRowArray) {
-            for (let i = 0; i < rawRowArray.length; i++) {
-                let val = String(rawRowArray[i] || '');
-                let match = val.match(/(https?:\/\/[^\s"'<()]+)/g);
-                if (match) {
-                    let found = match.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
-                    if (found) return found;
-                }
-                let formulaMatch = val.match(/HYPERLINK\s*\(\s*"([^"]+)"/i);
-                if (formulaMatch && formulaMatch[1]) {
-                    let url = formulaMatch[1];
-                    if (url.includes('youtube.com') || url.includes('youtu.be')) return url;
-                }
-            }
-            return '';
-        }
-
         function parseSheetLayout(rows) {
             structuredSections = [];
             let currentTier = null;
@@ -196,8 +178,6 @@
                     let nonEmpties = relevantCells.filter(c => c.length > 0);
 
                     if (nonEmpties.length >= 2) {
-                        let ytLink = extractYouTubeLinkFromCell(rowStringArray);
-
                         let levelObj = {
                             tier: currentTier,
                             name: rowStringArray[1] || nonEmpties[0] || 'Unknown Level',
@@ -205,9 +185,8 @@
                             length: rowStringArray[3] || nonEmpties[2] || 'N/A',
                             skillset: rowStringArray[4] || nonEmpties[3] || 'N/A',
                             enjoyment: rowStringArray[5] || 'N/A',
-                            levelId: rowStringArray[6] || '',   // Column G is Level ID
-                            levelInfo: rowStringArray[7] || '', // Column H is Level Info text
-                            showcase: ytLink,
+                            levelId: rowStringArray[6] || '',   // Column G data stays here
+                            levelInfo: rowStringArray[7] || '', // Column H data stays here
                             fullRowData: rowStringArray
                         };
                         currentLevels.push(levelObj);
@@ -332,14 +311,15 @@
             const contentContainer = document.getElementById('modal-content');
             contentContainer.innerHTML = '';
 
+            // 1. Swapped names ("Level Info" shows Column G data, "Level ID" shows Column H data)
+            // 2. Showcase completely removed from fields array
             const fields = [
                 { label: 'Creator(s)', value: lvl.creator },
                 { label: 'Length', value: lvl.length },
                 { label: 'Skillsets', value: lvl.skillset },
                 { label: 'Enjoyment', value: lvl.enjoyment },
-                { label: 'Level ID', value: lvl.levelId || 'N/A' },
-                { label: 'Level Info', value: lvl.levelInfo || 'None' },
-                { label: 'Showcase', value: lvl.showcase ? `<a href="${lvl.showcase}" target="_blank" class="text-indigo-400 hover:underline break-all font-semibold">Watch Showcase ↗</a>` : 'N/A' }
+                { label: 'Level Info', value: lvl.levelId || 'N/A' },
+                { label: 'Level ID', value: lvl.levelInfo || 'None' }
             ];
 
             fields.forEach(f => {
@@ -454,3 +434,4 @@
     </script>
 </body>
 </html>
+```[cite: 1]
