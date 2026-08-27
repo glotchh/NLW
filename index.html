@@ -114,14 +114,14 @@
     <script>
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTkS3uixPNrHp_nnr8dh2XENMuXvPF30vnVykoDDEySHWmdDpK7KZ8EPqZf-uaVA1oc1UgJr0hMKyDu/pub?output=csv';
 
-        // Exact official list of accepted tiers in order
+        // Exact strict allowed tiers list
         const VALID_TIERS = [
             'Beginner', 'Easy', 'Medium', 'Hard', 'Very Hard', 'Insane', 
             'Extreme', 'Remorseless', 'Relentless', 'Terrifying', 
             'Catastrophic', 'Inexorable', 'Excruciating', 'Merciless'
         ];
 
-        // Exact standardized skillsets provided
+        // Exact standardized skillsets
         const VALID_SKILLSETS = [
             'Ship', 'Learny', 'Memory', 'Timings', 'Wave', 'Duals', 
             'High-CPS', 'Nerve-control', 'All-around', 'Unbalanced', 'Chokepoints'
@@ -135,7 +135,7 @@
             header: true,
             skipEmptyLines: true,
             complete: function(results) {
-                // Filter out rows matching the side sections/unwanted shortcut tables
+                // Filter out rows matching side menus / shortcuts / headers
                 sheetData = results.data.filter(item => {
                     let firstVal = Object.values(item)[0];
                     if (!firstVal) return false;
@@ -174,7 +174,6 @@
             const tierSelect = document.getElementById('tier-filter');
             const skillsetSelect = document.getElementById('skillset-filter');
 
-            // Populate predefined strict tiers
             VALID_TIERS.forEach(t => {
                 let opt = document.createElement('option');
                 opt.value = t;
@@ -182,7 +181,6 @@
                 tierSelect.appendChild(opt);
             });
 
-            // Populate predefined standardized skillsets
             VALID_SKILLSETS.forEach(s => {
                 let opt = document.createElement('option');
                 opt.value = s;
@@ -200,20 +198,33 @@
             return 'long';
         }
 
+        // Helper to find the actual tier value from a row by scanning all columns for any match against VALID_TIERS
+        function extractTierFromRow(item) {
+            for (let val of Object.values(item)) {
+                if (!val) continue;
+                let strVal = String(val).trim();
+                let matched = VALID_TIERS.find(t => t.toLowerCase() === strVal.toLowerCase());
+                if (matched) return matched;
+            }
+            return null;
+        }
+
         function applyFilters() {
             const tierVal = document.getElementById('tier-filter').value;
             const skillsetVal = document.getElementById('skillset-filter').value;
             const lengthVal = document.getElementById('length-filter').value;
 
-            let tierKey = headers.find(h => /tier|difficulty/i.test(h)) || headers[1];
             let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[2];
             let lengthKey = headers.find(h => /length|time/i.test(h)) || headers[3];
 
             let filtered = sheetData.filter(item => {
-                let itemTier = String(item[tierKey] || '').trim();
+                let rowTier = extractTierFromRow(item);
                 let itemSkillsets = String(item[skillsetKey] || '');
 
-                let matchesTier = (tierVal === 'all') || (itemTier.toLowerCase() === tierVal.toLowerCase());
+                // Ensure the row actually contains a valid tier classification
+                if (!rowTier) return false;
+
+                let matchesTier = (tierVal === 'all') || (rowTier.toLowerCase() === tierVal.toLowerCase());
                 
                 let matchesSkillset = true;
                 if (skillsetVal !== 'all') {
@@ -293,39 +304,40 @@
             const emptyView = document.getElementById('empty-view');
             const badge = document.getElementById('counter-badge');
 
-            badge.textContent = `${data.length} Levels Displayed`;
             container.innerHTML = '';
 
-            if (data.length === 0) {
-                emptyView.classList.add('hidden'); // Fix layout hide quirk if empty
+            // Clean data to only include rows that map to a legitimate valid tier
+            let validRows = data.filter(item => extractTierFromRow(item) !== null);
+
+            badge.textContent = `${validRows.length} Levels Displayed`;
+
+            if (validRows.length === 0) {
                 emptyView.classList.remove('hidden');
                 return;
             } else {
                 emptyView.classList.add('hidden');
             }
 
-            let tierKey = headers.find(h => /tier|difficulty/i.test(h)) || headers[1];
             let nameKey = headers.find(h => /name|level|title/i.test(h)) || headers[0];
             let creatorKey = headers.find(h => /creator|by/i.test(h)) || headers[1];
             let lengthKey = headers.find(h => /length|time/i.test(h)) || headers[2];
             let skillsetKey = headers.find(h => /skillset|skill/i.test(h)) || headers[3];
 
-            // Group filtered data by tier to calculate exact level count per tier
+            // Group valid rows strictly by their matched valid tier in the order of VALID_TIERS
             let tierGroups = {};
-            data.forEach(item => {
-                let t = String(item[tierKey] || 'Unsorted').trim();
+            validRows.forEach(item => {
+                let t = extractTierFromRow(item);
                 if (!tierGroups[t]) tierGroups[t] = [];
                 tierGroups[t].push(item);
             });
 
-            // Iterate through valid tiers order or whatever tiers are present
-            let activeTiers = Object.keys(tierGroups);
-            
-            activeTiers.forEach(tierName => {
+            VALID_TIERS.forEach(tierName => {
+                if (!tierGroups[tierName] || tierGroups[tierName].length === 0) return;
+
                 let itemsInTier = tierGroups[tierName];
                 let count = itemsInTier.length;
 
-                // Tier section separator banner matching requested image style: < NUMBER > | < TIER >
+                // Tier section separator banner matching requested image format: < NUMBER > | < TIER >
                 let divider = document.createElement('div');
                 divider.className = "flex items-center my-6 text-indigo-400/80 font-bold text-sm tracking-widest uppercase";
                 divider.innerHTML = `
