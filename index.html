@@ -74,8 +74,8 @@
             </div>
         </header>
 
-        <!-- Search & Filters Section (1/3 Search, 2/3 Filters) -->
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 mb-10 bg-spacecard/70 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl">
+        <!-- Search & Filters Section (1/3 Search, 2/3 Filters) - Increased z-index stacking context -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5 mb-10 bg-spacecard/70 backdrop-blur-md border border-spaceborder p-5 rounded-2xl shadow-xl relative z-30">
             <!-- Search Bar (~1/3 width = md:col-span-4) -->
             <div class="md:col-span-4 flex flex-col justify-between">
                 <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Search Level or Creator</label>
@@ -140,7 +140,7 @@
         </div>
 
         <!-- Main Display Container -->
-        <div id="levels-container" class="space-y-4"></div>
+        <div id="levels-container" class="space-y-4 relative z-10"></div>
     </div>
 
     <!-- Toggle Background Video Button (Bottom Right) -->
@@ -448,19 +448,20 @@
             let row = document.createElement('div');
             row.className = "flex items-center px-3 py-2 rounded-lg hover:bg-slate-800/80 cursor-pointer transition text-sm text-slate-200 select-none";
             
-            // Circle indicator with fill capability
-            let circleOuter = document.createElement('div');
-            circleOuter.className = `w-4 h-4 rounded-full border border-indigo-500/60 flex items-center justify-center mr-3 shrink-0 transition ${isSelected ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-900'}`;
+            // Rounded square indicator container (replaced rounded-full with rounded-md)
+            let boxOuter = document.createElement('div');
+            boxOuter.className = `w-4 h-4 rounded-md border border-indigo-500/60 flex items-center justify-center mr-3 shrink-0 transition ${isSelected ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-900'}`;
             
-            let circleInner = document.createElement('div');
-            circleInner.className = `w-1.5 h-1.5 rounded-full bg-white transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0'}`;
-            circleOuter.appendChild(circleInner);
+            // Inner dot/indicator with slightly softer rounded corners for a clean aesthetic
+            let boxInner = document.createElement('div');
+            boxInner.className = `w-2 h-2 rounded-[2px] bg-white transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0'}`;
+            boxOuter.appendChild(boxInner);
 
             let textSpan = document.createElement('span');
             textSpan.textContent = label;
             textSpan.className = "truncate";
 
-            row.appendChild(circleOuter);
+            row.appendChild(boxOuter);
             row.appendChild(textSpan);
 
             row.addEventListener('click', (e) => {
@@ -651,7 +652,7 @@
                 let count = levels.length;
 
                 let divider = document.createElement('div');
-                divider.className = "flex items-center my-8 text-indigo-400 font-bold tracking-widest uppercase";
+                divider.className = "flex items-center my-8 text-indigo-400 font-bold tracking-widest uppercase relative z-10";
                 divider.innerHTML = `
                     <div class="flex-grow border-t border-indigo-500/30"></div>
                     <span class="mx-6 px-6 py-2 rounded-2xl bg-indigo-950/80 border border-indigo-500/40 shadow-md text-indigo-200 font-mono text-base md:text-lg backdrop-blur-md">
@@ -665,7 +666,7 @@
                     let tab = document.createElement('div');
                     let colorClass = getTierColor(tierName);
                     
-                    tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 backdrop-blur-md ${colorClass}`;
+                    tab.className = `border rounded-xl px-6 py-4 shadow-lg transition duration-200 grid grid-cols-1 md:grid-cols-12 items-center gap-4 backdrop-blur-md relative z-10 ${colorClass}`;
 
                     let leftCol = document.createElement('div');
                     leftCol.className = "space-y-0.5 md:col-span-4";
