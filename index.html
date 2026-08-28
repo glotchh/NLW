@@ -90,31 +90,40 @@
 
             <!-- Filters Group (~2/3 width = md:col-span-8) -->
             <div class="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
+                <!-- Tier Custom Multi-Select Dropdown -->
+                <div class="relative" id="tier-dropdown-container">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Tier</label>
-                    <select id="tier-filter" 
-                        class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm">
-                        <option value="all">All Tiers</option>
-                    </select>
+                    <button type="button" id="tier-dropdown-btn" class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm flex items-center justify-between text-left">
+                        <span id="tier-dropdown-label" class="truncate">All Tiers</span>
+                        <svg class="w-4 h-4 text-slate-400 ml-2 shrink-0 transition-transform duration-200" id="tier-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="tier-dropdown-menu" class="hidden absolute left-0 right-0 mt-2 bg-slate-900 border border-spaceborder rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto p-2 space-y-1 backdrop-blur-md">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
 
-                <div>
+                <!-- Skillset Custom Multi-Select Dropdown -->
+                <div class="relative" id="skillset-dropdown-container">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Skillset</label>
-                    <select id="skillset-filter" 
-                        class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm">
-                        <option value="all">All Skillsets</option>
-                    </select>
+                    <button type="button" id="skillset-dropdown-btn" class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm flex items-center justify-between text-left">
+                        <span id="skillset-dropdown-label" class="truncate">All Skillsets</span>
+                        <svg class="w-4 h-4 text-slate-400 ml-2 shrink-0 transition-transform duration-200" id="skillset-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="skillset-dropdown-menu" class="hidden absolute left-0 right-0 mt-2 bg-slate-900 border border-spaceborder rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto p-2 space-y-1 backdrop-blur-md">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
 
-                <div>
+                <!-- Length Custom Multi-Select Dropdown -->
+                <div class="relative" id="length-dropdown-container">
                     <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Filter by Length</label>
-                    <select id="length-filter" 
-                        class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm">
-                        <option value="all">All Lengths</option>
-                        <option value="medium">Medium (&lt; 0:59)</option>
-                        <option value="long">Long (1:00 - 1:59)</option>
-                        <option value="xl">XL (&gt;= 2:00)</option>
-                    </select>
+                    <button type="button" id="length-dropdown-btn" class="w-full bg-slate-900 border border-spaceborder rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-indigo-500 transition shadow-inner text-sm flex items-center justify-between text-left">
+                        <span id="length-dropdown-label" class="truncate">All Lengths</span>
+                        <svg class="w-4 h-4 text-slate-400 ml-2 shrink-0 transition-transform duration-200" id="length-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </button>
+                    <div id="length-dropdown-menu" class="hidden absolute left-0 right-0 mt-2 bg-slate-900 border border-spaceborder rounded-xl shadow-2xl z-50 max-h-60 overflow-y-auto p-2 space-y-1 backdrop-blur-md">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -192,13 +201,11 @@
                     'onReady': (event) => {
                         event.target.mute();
                         event.target.playVideo();
-                        // Guarantee captions are forcibly unloaded/disabled via API model
                         if (typeof event.target.unloadModule === 'function') {
                             event.target.unloadModule('captions');
                         }
                     },
                     'onStateChange': (event) => {
-                        // Loop / Cut off precisely at 2:31 (151 seconds)
                         if (event.data === YT.PlayerState.PLAYING) {
                             if (typeof event.target.unloadModule === 'function') {
                                 event.target.unloadModule('captions');
@@ -228,6 +235,17 @@
             'Ship', 'Learny', 'Memory', 'Timings', 'Wave', 'Duals', 
             'High-CPS', 'Nerve-control', 'All-around', 'Unbalanced', 'Chokepoints'
         ];
+
+        const VALID_LENGTHS = [
+            { id: 'medium', label: 'Medium (< 0:59)' },
+            { id: 'long', label: 'Long (1:00 - 1:59)' },
+            { id: 'xl', label: 'XL (>= 2:00)' }
+        ];
+
+        // Multi-select state storage
+        let selectedTiers = new Set(['all']);
+        let selectedSkillsets = new Set(['all']);
+        let selectedLengths = new Set(['all']);
 
         let structuredSections = []; 
         let sheetHeaders = [];
@@ -310,13 +328,28 @@
 
         function initApp() {
             document.getElementById('loading-view').classList.add('hidden');
-            populateDropdowns();
+            populateDropdownMenus();
             renderSections(structuredSections);
 
             document.getElementById('search-input').addEventListener('input', applyFilters);
-            document.getElementById('tier-filter').addEventListener('change', applyFilters);
-            document.getElementById('skillset-filter').addEventListener('change', applyFilters);
-            document.getElementById('length-filter').addEventListener('change', applyFilters);
+
+            // Dropdown toggle wiring
+            setupDropdownToggle('tier-dropdown-btn', 'tier-dropdown-menu', 'tier-arrow');
+            setupDropdownToggle('skillset-dropdown-btn', 'skillset-dropdown-menu', 'skillset-arrow');
+            setupDropdownToggle('length-dropdown-btn', 'length-dropdown-menu', 'length-arrow');
+
+            // Close dropdowns on outside click
+            window.addEventListener('click', (e) => {
+                ['tier', 'skillset', 'length'].forEach(type => {
+                    const container = document.getElementById(`${type}-dropdown-container`);
+                    const menu = document.getElementById(`${type}-dropdown-menu`);
+                    const arrow = document.getElementById(`${type}-arrow`);
+                    if (container && !container.contains(e.target)) {
+                        menu.classList.add('hidden');
+                        arrow.classList.remove('rotate-180');
+                    }
+                });
+            });
 
             document.getElementById('close-modal').addEventListener('click', closeModal);
             document.getElementById('modal-backdrop').addEventListener('click', closeModal);
@@ -347,23 +380,114 @@
             });
         }
 
-        function populateDropdowns() {
-            const tierSelect = document.getElementById('tier-filter');
-            const skillsetSelect = document.getElementById('skillset-filter');
+        function setupDropdownToggle(btnId, menuId, arrowId) {
+            const btn = document.getElementById(btnId);
+            const menu = document.getElementById(menuId);
+            const arrow = document.getElementById(arrowId);
 
-            VALID_TIERS.forEach(t => {
-                let opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                tierSelect.appendChild(opt);
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Close others
+                ['tier', 'skillset', 'length'].forEach(t => {
+                    if (`${t}-dropdown-menu` !== menuId) {
+                        document.getElementById(`${t}-dropdown-menu`).classList.add('hidden');
+                        document.getElementById(`${t}-arrow`).classList.remove('rotate-180');
+                    }
+                });
+                menu.classList.toggle('hidden');
+                arrow.classList.toggle('rotate-180');
+            });
+        }
+
+        function populateDropdownMenus() {
+            populateMenu('tier', VALID_TIERS, selectedTiers, 'All Tiers');
+            populateMenu('skillset', VALID_SKILLSETS, selectedSkillsets, 'All Skillsets');
+            populateMenu('length', VALID_LENGTHS, selectedLengths, 'All Lengths', true);
+        }
+
+        function populateMenu(type, items, selectionSet, allLabel, isObjArray = false) {
+            const menu = document.getElementById(`${type}-dropdown-menu`);
+            menu.innerHTML = '';
+
+            // "All" option row
+            let allDiv = createOptionRow(allLabel, 'all', selectionSet.has('all'), () => {
+                selectionSet.clear();
+                selectionSet.add('all');
+                updateDropdownLabel(type, allLabel);
+                populateMenu(type, items, selectionSet, allLabel, isObjArray);
+                applyFilters();
+            });
+            menu.appendChild(allDiv);
+
+            // Specific option rows
+            items.forEach(item => {
+                let val = isObjArray ? item.id : item;
+                let lbl = isObjArray ? item.label : item;
+
+                let div = createOptionRow(lbl, val, selectionSet.has(val), () => {
+                    if (selectionSet.has('all')) {
+                        selectionSet.delete('all');
+                    }
+                    if (selectionSet.has(val)) {
+                        selectionSet.delete(val);
+                        if (selectionSet.size === 0) {
+                            selectionSet.add('all');
+                        }
+                    } else {
+                        selectionSet.add(val);
+                    }
+                    updateDropdownLabel(type, allLabel);
+                    populateMenu(type, items, selectionSet, allLabel, isObjArray);
+                    applyFilters();
+                });
+                menu.appendChild(div);
+            });
+        }
+
+        function createOptionRow(label, value, isSelected, onClickCallback) {
+            let row = document.createElement('div');
+            row.className = "flex items-center px-3 py-2 rounded-lg hover:bg-slate-800/80 cursor-pointer transition text-sm text-slate-200 select-none";
+            
+            // Circle indicator with fill capability
+            let circleOuter = document.createElement('div');
+            circleOuter.className = `w-4 h-4 rounded-full border border-indigo-500/60 flex items-center justify-center mr-3 shrink-0 transition ${isSelected ? 'bg-indigo-600 border-indigo-500' : 'bg-slate-900'}`;
+            
+            let circleInner = document.createElement('div');
+            circleInner.className = `w-1.5 h-1.5 rounded-full bg-white transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0'}`;
+            circleOuter.appendChild(circleInner);
+
+            let textSpan = document.createElement('span');
+            textSpan.textContent = label;
+            textSpan.className = "truncate";
+
+            row.appendChild(circleOuter);
+            row.appendChild(textSpan);
+
+            row.addEventListener('click', (e) => {
+                e.stopPropagation();
+                onClickCallback();
             });
 
-            VALID_SKILLSETS.forEach(s => {
-                let opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = s;
-                skillsetSelect.appendChild(opt);
-            });
+            return row;
+        }
+
+        function updateDropdownLabel(type, allLabel) {
+            const labelSpan = document.getElementById(`${type}-dropdown-label`);
+            let setRef = type === 'tier' ? selectedTiers : type === 'skillset' ? selectedSkillsets : selectedLengths;
+
+            if (setRef.has('all') || setRef.size === 0) {
+                labelSpan.textContent = allLabel;
+            } else if (setRef.size === 1) {
+                let val = Array.from(setRef)[0];
+                if (type === 'length') {
+                    let match = VALID_LENGTHS.find(l => l.id === val);
+                    labelSpan.textContent = match ? match.label : val;
+                } else {
+                    labelSpan.textContent = val;
+                }
+            } else {
+                labelSpan.textContent = `${setRef.size} selected`;
+            }
         }
 
         function parseLengthToSeconds(lengthStr) {
@@ -380,15 +504,12 @@
 
         function applyFilters() {
             const searchVal = document.getElementById('search-input').value.trim().toLowerCase();
-            const tierVal = document.getElementById('tier-filter').value;
-            const skillsetVal = document.getElementById('skillset-filter').value;
-            const lengthVal = document.getElementById('length-filter').value;
 
             let filteredSections = [];
             let totalMatchedCount = 0;
 
             structuredSections.forEach(section => {
-                if (tierVal !== 'all' && section.tier.toLowerCase() !== tierVal.toLowerCase()) {
+                if (!selectedTiers.has('all') && !selectedTiers.has(section.tier)) {
                     return;
                 }
 
@@ -400,18 +521,22 @@
                         matchesSearch = nameMatch || creatorMatch;
                     }
 
-                    let matchesSkillset = (skillsetVal === 'all') || lvl.skillset.toLowerCase().includes(skillsetVal.toLowerCase());
+                    let matchesSkillset = true;
+                    if (!selectedSkillsets.has('all')) {
+                        matchesSkillset = Array.from(selectedSkillsets).some(s => 
+                            lvl.skillset.toLowerCase().includes(s.toLowerCase())
+                        );
+                    }
                     
                     let matchesLength = true;
-                    if (lengthVal !== 'all') {
+                    if (!selectedLengths.has('all')) {
                         let totalSecs = parseLengthToSeconds(lvl.length);
-                        if (lengthVal === 'medium') {
-                            matchesLength = totalSecs < 59;
-                        } else if (lengthVal === 'long') {
-                            matchesLength = totalSecs >= 60 && totalSecs <= 119;
-                        } else if (lengthVal === 'xl') {
-                            matchesLength = totalSecs >= 120;
-                        }
+                        matchesLength = Array.from(selectedLengths).some(l => {
+                            if (l === 'medium') return totalSecs < 59;
+                            if (l === 'long') return totalSecs >= 60 && totalSecs <= 119;
+                            if (l === 'xl') return totalSecs >= 120;
+                            return false;
+                        });
                     }
 
                     return matchesSearch && matchesSkillset && matchesLength;
@@ -513,7 +638,6 @@
                 emptyView.classList.add('hidden');
             }
 
-            // Consolidate tiers to eliminate section splitting bug
             let tierMap = {};
             sectionsToRender.forEach(sec => {
                 if (!tierMap[sec.tier]) {
